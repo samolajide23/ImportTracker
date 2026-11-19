@@ -132,6 +132,7 @@
     .invoice-status.due{background:var(--amber-soft)}
     .invoice-status strong{display:block;font-size:13px}
     .invoice-status .hint{display:block;margin-top:3px;font-size:11px}
+    .shipment-summary{margin-top:8px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:11px}
     .photo-card .car-actions{margin-top:14px}
     .next-action{background:var(--amber-soft);border-radius:9px;margin:0;padding:10px 12px;min-height:0}
     .next-action strong{font-size:13px}
@@ -156,8 +157,18 @@
     .task-detail{margin-top:2px;color:var(--muted);font-size:10px}
     .task-row a{align-self:center;color:var(--accent);font-size:10px;text-decoration:none;white-space:nowrap}
     .task-row a:hover{text-decoration:underline}
+    .task-phase+.task-phase{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+    .task-phase-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;color:var(--muted);font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.06em}
+    .task-phase-count{padding:1px 6px;border-radius:99px;background:var(--accent-soft);letter-spacing:0}
+    .task-docs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+    .task-docs a{padding:2px 6px;border:1px solid var(--line);border-radius:99px;color:var(--muted);font-size:9px;white-space:normal}
+    .task-docs a.have{background:var(--green-soft);color:var(--green);border-color:transparent}
+    .task-docs a.need{background:var(--amber-soft);color:var(--amber);border-color:transparent}
+    .task-docs a.waiting{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+    .task-optional{color:var(--muted);font-weight:500}
     .task-toggle{margin-top:8px;padding:5px 0;border:0;background:none;color:var(--accent);font-size:11px}
     .task-empty,.payment-empty{padding:18px 0;color:var(--muted);font-size:12px}
+    .storage-note{margin-top:24px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:var(--accent-soft);color:var(--muted);font-size:11px}
     .event-amount .small{font-size:10px}
     .event-amount .tag{margin-left:7px}
     .panel{border:0;box-shadow:none;padding:0;margin:36px 0 0;background:transparent}
@@ -210,7 +221,8 @@
         </section>
       </div>
     </section>
-    <div class="footer">Your car data is saved in this browser. Open a car to update its details, costs, documents, and timeline.</div>
+    <div class="storage-note">Autosaved in this browser on this exact site address. Use the Vercel production URL for ongoing records; preview URLs keep separate data. To move a car between URLs, export its JSON from the car tracker and import it on the other URL.</div>
+    <div class="footer">Open a car to update its details, costs, documents, and timeline.</div>
   </main>
   <script src="tracker.js"></script>
   <script>
@@ -249,7 +261,10 @@
           if(balance>0) addEvent(events,car,"payment","Invoice balance",i.dueDate,"Invoice payment",balance/Math.max(rate,0.000001),rate,"due");
           const cif=rate>0?total/rate:0,duty=cif*n(i.dutyRate),vat=i.vatEnabled?(cif+duty)*0.23:0;
           const estimates={duty,vat,vrt:n(v.high)};
-          for(const [key,title,timing] of [["duty","Customs duty","On arrival"],["vat","Import VAT","On arrival"],["vrt","VRT","Within 30 days of arrival (confirm)"]]) {
+          const actualEntry=d.shipment?.actualEntryDate,eta=d.shipment?.eta;
+          const arrivalTiming=actualEntry?"At recorded entry date":eta?"On ETA · planning estimate":"On arrival · date to confirm";
+          const vrtTiming=actualEntry?"Within 30 days of actual entry · Revenue":eta?"ETA + 30 days · planning only; confirm actual entry":"Within 30 days of entry · date to confirm";
+          for(const [key,title,timing] of [["duty","Customs duty",arrivalTiming],["vat","Import VAT",arrivalTiming],["vrt","VRT",vrtTiming]]) {
             const record=d.charges?.[key]||{actual:0,status:"estimated",date:""};
             const estimate=estimates[key], amount=record.status==="charged"&&n(record.actual)>0?n(record.actual):estimate;
             if(record.status!=="paid"&&amount>0) addEvent(events,car,"charge",title,record.date,timing,amount,rate,record.status==="charged"?"charged":"due");
@@ -257,10 +272,23 @@
           for(const cost of d.costs||[]) {
             if(cost.status==="paid") continue;
             const amount=cost.status==="charged"&&n(cost.actual)>0?n(cost.actual):Math.max(n(cost.estimate),n(cost.actual));
-            if(amount>0) addEvent(events,car,"cost",cost.category,cost.date,cost.date?"Scheduled cost":"Date to confirm",amount,rate,cost.status==="charged"?"charged":"due");
+            const timing=cost.dateMode==="manual"?"Manual date":cost.date?actualEntry?"Based on actual entry date":"Planning date based on ETA":"Date to confirm";
+            if(amount>0) addEvent(events,car,"cost",cost.category,cost.date,timing,amount,rate,cost.status==="charged"?"charged":"due");
+          }
+          if(d.shipment?.actualEntryDate) {
+            const source=d.shipment.actualEntrySource?` · Source: ${d.shipment.actualEntrySource}`:"";
+            events.push({car:carName(d),id:car.id,kind:"step",title:"Vehicle entered Ireland",date:d.shipment.actualEntryDate,detail:`Recorded actual entry date${source} · Revenue deadlines start from entry`,amount:null,rate,status:""});
+          }
+          if(d.shipment?.customsReleaseDate) {
+            const source=d.shipment.customsReleaseSource?` · Source: ${d.shipment.customsReleaseSource}`:"";
+            events.push({car:carName(d),id:car.id,kind:"step",title:"Customs release",date:d.shipment.customsReleaseDate,detail:`Recorded customs release date${source}`,amount:null,rate,status:""});
           }
           for(const stage of d.stages||[]) {
-            if(stage.date&&stage.status!=="Done"&&stage.name!=="Pay invoice balance") events.push({car:carName(d),id:car.id,kind:"step",title:stage.name,date:stage.date,detail:stage.detail,amount:null,rate,status:""});
+            if(stage.date&&stage.status!=="Done"&&stage.name!=="Pay invoice balance") {
+              const basis=stage.dateTrigger?(stage.dateMode==="manual"?"Manual date override":stage.dateBasis==="actualEntryDate"?"Based on actual entry date":"Planning date based on ETA"):"";
+              const etaSource=stage.name==="Shipping and arrival"&&d.shipment?.etaSource?`ETA source: ${d.shipment.etaSource}`:"";
+              events.push({car:carName(d),id:car.id,kind:"step",title:stage.name,date:stage.date,detail:[stage.detail,basis,etaSource].filter(Boolean).join(" · "),amount:null,rate,status:""});
+            }
           }
         }
         return events.sort((a,b)=>(a.date||"9999-12-31").localeCompare(b.date||"9999-12-31")).slice(0,30);
@@ -279,12 +307,26 @@
           .sort((a,b)=>a.priority-b.priority||(a.date||"9999-12-31").localeCompare(b.date||"9999-12-31")||a.index-b.index);
         $("todoCount").textContent=tasks.length?`${tasks.length} open across ${fleet.cars.length} car${fleet.cars.length===1?"":"s"}`:fleet.cars.length?"Everything is done":"No cars to track";
         const shown=showAllTasks?tasks:tasks.slice(0,5);
-        $("todoList").innerHTML=tasks.length?`${shown.map(task=>{
+        const groups=new Map();
+        for(const task of shown) {
+          const phase=task.phase||"Other";
+          if(!groups.has(phase))groups.set(phase,[]);
+          groups.get(phase).push(task);
+        }
+        const taskRows=task=> {
           const meta=task.date?`Due ${dateText(task.date)}`:task.status;
-          const detail=[meta,task.detail].filter(Boolean).join(" · ");
+          const detail=[meta,task.dateBasis,task.detail].filter(Boolean).join(" · ");
           const checkedLabel=task.kind==="document"?"Mark document as have":"Mark stage as done";
-          return `<div class="task-row"><input type="checkbox" aria-label="${checkedLabel}: ${esc(task.title)}" data-task-kind="${task.kind}" data-task-car="${esc(task.carId)}" data-task-index="${task.index}"><div><div class="task-title">${esc(task.car)} · ${esc(task.title)}</div><div class="task-detail">${esc(detail)}</div></div><a href="car.html?id=${encodeURIComponent(task.carId)}">Open →</a></div>`;
-        }).join("")}${tasks.length>5?`<button class="task-toggle" type="button" data-toggle-tasks>${showAllTasks?"Show fewer":"Show all"} ${showAllTasks?"":"("+tasks.length+")"} tasks</button>`:""}`:`<div class="task-empty">${fleet.cars.length?"All caught up. New tasks will appear as you update your import.":"Add a car to create your to-do list."}</div>`;
+          const target=task.kind==="document"?"documents":"timeline";
+          const carUrl=`car.html?id=${encodeURIComponent(task.carId)}`;
+          const linked=task.documents||[];
+          const linkedHtml=linked.length?`<div class="task-docs">${linked.slice(0,3).map(doc=>{
+            const status=["Have","Need","Waiting"].includes(doc.status)?doc.status.toLowerCase():"need";
+            return `<a class="${status}" href="${carUrl}#documents" title="${esc(doc.name)} · ${esc(doc.status)}${doc.optional?" · Optional":""}">${esc(doc.name)} · ${esc(doc.status)}${doc.optional?" · Optional":""}</a>`;
+          }).join("")}${linked.length>3?`<a href="${carUrl}#documents">+${linked.length-3} more documents</a>`:""}</div>`:"";
+          return `<div class="task-row"><input type="checkbox" aria-label="${checkedLabel}: ${esc(task.title)}" data-task-kind="${task.kind}" data-task-car="${esc(task.carId)}" data-task-index="${task.index}"><div><div class="task-title">${esc(task.car)} · ${esc(task.title)}${task.optional?` <span class="task-optional">(optional)</span>`:""}</div><div class="task-detail">${esc(detail)}</div>${linkedHtml}</div><a href="${carUrl}#${target}">Open →</a></div>`;
+        };
+        $("todoList").innerHTML=tasks.length?`${[...groups].sort((a,b)=>(a[1][0].phaseOrder??99)-(b[1][0].phaseOrder??99)).map(([phase,items])=>`<section class="task-phase"><div class="task-phase-head"><span>${esc(phase)}</span><span class="task-phase-count">${items.length} shown</span></div>${items.map(taskRows).join("")}</section>`).join("")}${tasks.length>shown.length?`<button class="task-toggle" type="button" data-toggle-tasks>${showAllTasks?"Show fewer":"Show all"} ${showAllTasks?"":"("+tasks.length+")"} tasks</button>`:""}`:`<div class="task-empty">${fleet.cars.length?"All caught up. New tasks will appear as you update your import.":"Add a car to create your to-do list."}</div>`;
       }
       function renderCars(fleet) {
         $("carGrid").innerHTML=fleet.cars.map(car=>{
@@ -297,6 +339,9 @@
           const invoiceStatus=invoiceBalance>0
             ?`<div class="invoice-status due"><strong>Invoice balance due · ${amountPair(invoiceBalance/Math.max(rate,0.000001),rate)}</strong><span class="hint">¥${new Intl.NumberFormat("en-IE",{maximumFractionDigits:0}).format(invoiceBalance)} · Due ${esc(dateText(d.invoice?.dueDate))}</span></div>`
             :`<div class="invoice-status"><strong>${totalInvoice>0?"Invoice paid in full":"No invoice balance recorded"}</strong><span class="hint">${totalInvoice>0?"No invoice payment is currently due.":"Add invoice details in the tracker if needed."}</span></div>`;
+          const shipment=d.shipment||{};
+          const shipmentStatus=shipment.actualEntryDate?`Entered Ireland ${dateText(shipment.actualEntryDate)}`:shipment.eta?`Expected arrival ${dateText(shipment.eta)}`:"ETA not recorded";
+          const shipmentDetails=[shipment.destinationPort?`Port: ${shipment.destinationPort}`:"",shipment.customsReleaseDate?`Customs released ${dateText(shipment.customsReleaseDate)}`:"",shipment.etaSource?`ETA source: ${shipment.etaSource}`:""].filter(Boolean).join(" · ");
           return `<article class="car-card">
             <div class="photo-card-hero">${photo}<div class="photo-card-caption"><div><h2 class="car-name">${esc(carName(d))}</h2><div class="plate">${esc(plateFor(d))}${field(d,"Year of manufacture")?` · ${esc(field(d,"Year of manufacture"))}`:""}</div></div><span class="tag ${invoiceBalance>0?"due":"paid"}">${invoiceBalance>0?"Invoice payment due":"No invoice balance"}</span></div></div>
             <div class="photo-card-body">
@@ -304,6 +349,7 @@
               <div class="payment-progress"><div class="payment-progress-track"><span style="width:${progress}%"></span></div><div class="progress-copy"><span>${Math.round(progress)}% of high estimate paid</span></div></div>
               <div class="estimate-grid"><div class="estimate-item"><span class="metric-label">Paid so far</span><strong class="metric-value">${amountPair(calc.paid,rate)}</strong></div><div class="estimate-item"><span class="metric-label">Total estimate · low to high</span><strong class="metric-value">${amountPair(calc.low,rate)} – ${amountPair(calc.high,rate)}</strong></div></div>
               ${invoiceStatus}
+              <div class="shipment-summary"><strong>${esc(shipmentStatus)}</strong>${shipmentDetails?` · ${esc(shipmentDetails)}`:""}</div>
             </div>
             <div class="photo-card-body" style="padding-top:0"><div class="car-actions"><a class="button primary" href="car.html?id=${encodeURIComponent(car.id)}">Open tracker</a><button type="button" class="remove" data-delete-car="${esc(car.id)}" aria-label="Remove ${esc(carName(d))}">Remove car</button></div></div>
           </article>`;

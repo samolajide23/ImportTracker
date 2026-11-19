@@ -113,6 +113,14 @@
     .check-row:last-child, .stage:last-child { border-bottom:0; }
     .check-row strong, .stage strong { display:block; }
     .check-row .hint, .stage .hint { margin:1px 0 0; }
+    .document-meta { display:flex; flex-wrap:wrap; gap:5px; margin-top:3px; }
+    .phase-label, .optional-label { color:var(--muted); font-size:10px; }
+    .optional-label { font-weight:700; }
+    .stage-docs { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+    .stage-docs a { padding:2px 7px; border-radius:99px; background:var(--accent-soft); color:var(--accent); font-size:10px; text-decoration:none; }
+    .stage-docs a.have { background:var(--green-soft); color:var(--green); }
+    .stage-docs a.need { background:var(--amber-soft); color:var(--amber); }
+    .stage-docs a:hover { text-decoration:underline; }
     .stage-marker { width:12px; height:12px; border:2px solid var(--line); border-radius:50%; }
     .stage.done .stage-marker { background:var(--green); border-color:var(--green); }
     .stage.current .stage-marker { background:var(--accent); border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
@@ -242,9 +250,9 @@
             <tbody id="costTimelineRows"></tbody>
           </table>
         </div>
-        <div class="hint" style="margin-top:8px">Dates are planning estimates, not confirmed payment deadlines. Edit a generated date to override it, or clear it to restore automatic timing.</div>
+        <div class="hint" style="margin-top:8px">ETA-based dates are planning reminders, not legal deadlines. Revenue deadlines are calculated from the recorded actual entry date. Edit a generated date to override it, or clear it to restore automatic timing.</div>
       </div>
-      <div class="section-head" style="margin-top:22px"><div><h3 style="margin:0">Other costs</h3><div class="hint">Dates for arrival and registration costs follow the expected arrival date. Edit a date to make it manual.</div></div><button id="addCost" type="button">+ Add line</button></div>
+      <div class="section-head" style="margin-top:22px"><div><h3 style="margin:0">Other costs</h3><div class="hint">Clearance and port handling follow ETA or actual entry. Date NCT, plates, insurance and motor tax manually until the sequence is confirmed.</div></div><button id="addCost" type="button">+ Add line</button></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Category</th><th>Estimate (€)</th><th>Actual (€)</th><th>Status</th><th>Date</th><th>Notes / receipt URL</th><th></th></tr></thead>
@@ -263,7 +271,7 @@
       <summary>Import stages and due dates</summary>
       <div class="details-content"><div class="hint">Dates marked as estimated or to confirm are not confirmed.</div><div id="timelineRows"></div></div>
     </details>
-    <div class="footer">Stored locally in this browser. Export a JSON backup regularly. This tracker is not tax or registration advice.</div>
+    <div class="footer">Autosaved in this browser on this exact site address. Vercel preview and production URLs keep separate data. Export JSON to back up or move this car between URLs. This tracker is not tax or registration advice.</div>
   </main>
   <script src="tracker.js"></script>
   <script>
@@ -275,6 +283,7 @@
         const base = clone(seed);
         if (saved.invoice && typeof saved.invoice === "object") Object.assign(base.invoice, saved.invoice);
         if (saved.vrt && typeof saved.vrt === "object") Object.assign(base.vrt, saved.vrt);
+        if (saved.shipment && typeof saved.shipment === "object" && !Array.isArray(saved.shipment)) Object.assign(base.shipment, saved.shipment);
         if (saved.charges && typeof saved.charges === "object" && !Array.isArray(saved.charges)) {
           for (const key of ["duty","vat","vrt"]) {
             if (saved.charges[key] && typeof saved.charges[key] === "object") Object.assign(base.charges[key], saved.charges[key]);
@@ -299,6 +308,10 @@
         if(!base.stages.some(stage=>stage.name==="Shipping and arrival")) {
           base.stages.push({name:"Shipping and arrival",date:"",detail:"Date to confirm with the shipper.",status:"Waiting"});
         }
+        if(!saved.shipment||!Object.prototype.hasOwnProperty.call(saved.shipment,"eta")) {
+          base.shipment.eta=base.stages.find(stage=>stage.name==="Shipping and arrival")?.date||"";
+        }
+        ImportTrackerStore.normalizeCarData(base);
         return base;
       };
       let fleet, carId, currentCar, data;
@@ -339,30 +352,32 @@
       const timelineStatusOptions = status => ["estimated","quoted","charged","paid"].map(option=>`<option value="${option}" ${status===option?"selected":""}>${option}</option>`).join("");
       const waitingForCharge = (estimate, actual, status) => status==="paid" ? 0 : (number(actual)>0 ? number(actual) : number(estimate));
       const displayDate = value => value ? new Intl.DateTimeFormat("en-IE",{day:"numeric",month:"short",year:"numeric"}).format(new Date(`${value}T00:00:00`)) : "Date to confirm";
-      const arrivalDate = () => data.stages.find(stage=>stage.name==="Shipping and arrival")?.date||"";
+      const expectedArrivalDate = () => data.shipment.eta||data.stages.find(stage=>stage.name==="Shipping and arrival")?.date||"";
+      const arrivalDate = () => data.shipment.actualEntryDate||expectedArrivalDate();
       const costTiming = cost => {
         if(cost.dateMode==="manual")return cost.date?"Manual date":"Date to confirm";
         const offset=ImportTrackerStore.costDateOffset(cost.category);
         if(offset!==null&&!arrivalDate())return "Waiting for arrival date";
-        return offset===0?"On expected arrival (estimate)":offset===31?"Day 31 after arrival (estimate)":"Set date manually";
+        if(offset===0)return data.shipment.actualEntryDate?"On recorded entry date":"On expected arrival (estimate)";
+        return "Set date manually";
       };
       const syncArrivalDates = () => ImportTrackerStore.syncArrivalDates(data);
       function renderCostTimeline() {
         syncArrivalDates();
-        const arrival=arrivalDate();
+        const arrival=arrivalDate(),actualEntry=data.shipment.actualEntryDate;
         $("arrivalScheduleNote").innerHTML=arrival
-          ?`Expected arrival: <strong>${displayDate(arrival)}</strong>. Duty, VAT, clearance and port handling are dated on arrival; VRT by day 30; NCT, plates, insurance and motor tax on day 31 as a planning estimate. Confirm the VRT deadline and registration sequence. <a href="vehicle.html?id=${encodeURIComponent(carId)}">Edit arrival date</a>.`
-          :`Set an expected arrival date in <a href="vehicle.html?id=${encodeURIComponent(carId)}">Edit car</a> to date customs and port costs on arrival, VRT by day 30, and registration costs after that. These are planning estimates; confirm the actual sequence.`;
+          ?`${actualEntry?"Actual entry date":"Expected arrival (ETA)"}: <strong>${displayDate(arrival)}</strong>. Customs and port costs follow this date. Revenue's NCTS appointment and registration reminders are based on actual entry when recorded; ETA-based dates are planning reminders only. NCT, plates, insurance and motor tax remain manually dated. <a href="vehicle.html?id=${encodeURIComponent(carId)}">Edit shipment details</a>.`
+          :`Enter an ETA in <a href="vehicle.html?id=${encodeURIComponent(carId)}">Shipment details</a> for planning reminders. Record the actual entry date to calculate Revenue's appointment-by-seven-days and registration-by-30-days deadlines.`;
         const chargeRows = [
-          ["duty","Customs duty",data.charges.duty.dateMode==="manual"?"Manual date":arrival?`On arrival · ${displayDate(arrival)}`:"On arrival"],
-          ["vat","Import VAT",data.charges.vat.dateMode==="manual"?"Manual date":arrival?`On arrival · ${displayDate(arrival)}`:"On arrival"],
-          ["vrt","VRT",data.charges.vrt.dateMode==="manual"?"Manual date":arrival?`By ${displayDate(data.charges.vrt.date)} · within 30 days`:"Within 30 days of arrival"]
+          ["duty","Customs duty",data.charges.duty.dateMode==="manual"?"Manual date":arrival?`${actualEntry?"Recorded entry":"Expected arrival"} · ${displayDate(arrival)}`:"On arrival"],
+          ["vat","Import VAT",data.charges.vat.dateMode==="manual"?"Manual date":arrival?`${actualEntry?"Recorded entry":"Expected arrival"} · ${displayDate(arrival)}`:"On arrival"],
+          ["vrt","VRT",data.charges.vrt.dateMode==="manual"?"Manual date":arrival?`${displayDate(data.charges.vrt.date)} · ${actualEntry?"entry + 30 days":"ETA + 30 days · planning"}`:"Within 30 days of entry"]
         ].map(([key,name,timing])=>`<tr>
           <td>${name}</td><td>${timing}</td><td><span data-charge-estimate="${key}"></span></td>
           <td><input aria-label="${name} charged amount in euros" data-charge-actual="${key}" type="number" min="0" step=".01"><small class="jpy-equivalent" data-charge-jpy="${key}"></small></td>
           <td><span data-charge-waiting="${key}"></span></td>
           <td><select aria-label="${name} status" data-charge-status="${key}">${timelineStatusOptions(data.charges[key].status)}</select></td>
-          <td><input aria-label="${name} due or charged date" title="${data.charges[key].dateMode==="manual"?"Manual date; clear to restore automatic timing":"Auto-filled from expected arrival; edit to override"}" data-charge-date="${key}" type="date"></td>
+          <td><input aria-label="${name} due or charged date" title="${data.charges[key].dateMode==="manual"?"Manual date; clear to restore automatic timing":"Follows ETA or actual entry date; edit to override"}" data-charge-date="${key}" type="date"></td>
         </tr>`).join("");
         const invoiceRow=`<tr>
           <td>Invoice payments</td><td>Balance due per invoice</td><td><span data-invoice-estimate></span></td>
@@ -432,13 +447,13 @@
         const vrtHigh=data.charges.vrt.status==="paid"?0:data.charges.vrt.status==="charged"&&number(data.charges.vrt.actual)>0?number(data.charges.vrt.actual):number(data.vrt.high);
         const feeTotal=data.costs.reduce((sum,cost)=>sum+(cost.status==="paid"?0:cost.status==="charged"&&number(cost.actual)>0?number(cost.actual):Math.max(number(cost.estimate),number(cost.actual))),0);
         const invoiceBalance=Math.max(invoiceTotalJpy()-invoicePaidJpy(),0)/rateValue;
-        const arrival=data.stages.find(stage=>stage.name==="Shipping and arrival")?.date;
+        const arrival=arrivalDate(),actualEntry=!!data.shipment.actualEntryDate;
         const vrtDate=data.charges.vrt.date||data.stages.find(stage=>stage.name==="Register and pay VRT")?.date;
         const feeDates=data.costs.map(cost=>cost.date).filter(Boolean).sort();
         return [
           {label:"Invoice",when:displayDate(data.invoice.dueDate),low:invoiceBalance,high:invoiceBalance},
-          {label:"At port",when:data.charges.duty.date?displayDate(data.charges.duty.date):arrival?`Arrival ${displayDate(arrival)}`:"On arrival",low:duty+vat,high:duty+vat},
-          {label:"VRT",when:vrtDate?displayDate(vrtDate):"Within 30 days",low:vrtLow,high:vrtHigh},
+          {label:"At port",when:data.charges.duty.date?displayDate(data.charges.duty.date):arrival?`${actualEntry?"Entry":"ETA"} ${displayDate(arrival)}`:"On arrival",low:duty+vat,high:duty+vat},
+          {label:"VRT",when:vrtDate?`${displayDate(vrtDate)}${actualEntry?"":" · planning"}`:"Within 30 days of entry",low:vrtLow,high:vrtHigh},
           {label:"Other fees",when:feeDates.length?displayDate(feeDates[0]):"As arranged",low:feeTotal,high:feeTotal}
         ];
       }
@@ -519,22 +534,36 @@
           <td><input aria-label="Estimated euros" data-cost="${index}" data-key="estimate" type="number" min="0" step=".01" value="${number(c.estimate)}"><small class="jpy-equivalent" data-cost-jpy="${index}:estimate"></small></td>
           <td><input aria-label="Actual euros" data-cost="${index}" data-key="actual" type="number" min="0" step=".01" value="${number(c.actual)}"><small class="jpy-equivalent" data-cost-jpy="${index}:actual"></small></td>
           <td><select aria-label="Cost status" data-cost="${index}" data-key="status">${["estimated","quoted","charged","paid"].map(s=>`<option ${c.status===s?"selected":""}>${s}</option>`).join("")}</select></td>
-          <td><input aria-label="Cost date" title="${c.dateMode==="manual"?"Manual date; clear to restore automatic timing":"Auto-filled when expected arrival is known; edit to override"}" data-cost="${index}" data-key="date" type="date" value="${esc(c.date)}"></td>
+          <td><input aria-label="Cost date" title="${c.dateMode==="manual"?"Manual date; clear to restore automatic timing":ImportTrackerStore.costDateOffset(c.category)!==null?"Follows ETA or actual entry date; edit to override":"Set a manual date when confirmed"}" data-cost="${index}" data-key="date" type="date" value="${esc(c.date)}"></td>
           <td><input aria-label="Notes or receipt URL" data-cost="${index}" data-key="notes" value="${esc(c.notes)}" placeholder="Notes"><input aria-label="Receipt link" data-cost="${index}" data-key="receipt" value="${esc(c.receipt)}" placeholder="Receipt URL" style="margin-top:5px"></td>
           <td><button class="row-remove" type="button" data-remove="${index}" aria-label="Remove cost line">×</button></td></tr>`).join("");
       }
       function renderDocuments() {
         $("documentRows").innerHTML=data.documents.map((d,i)=>`<div class="check-row">
           <input type="checkbox" aria-label="Mark document as have" data-doc-have="${i}" ${d.status==="Have"?"checked":""}>
-          <div><strong>${esc(d.name)}</strong><input aria-label="Document notes" data-doc="${i}" data-key="notes" value="${esc(d.notes)}" placeholder="Notes" style="margin-top:6px"><input aria-label="Document link" data-doc="${i}" data-key="link" value="${esc(d.link)}" placeholder="Optional link" style="margin-top:5px"></div>
+          <div><strong>${esc(d.name)}</strong><div class="document-meta"><span class="phase-label">${esc(d.phase||"Other")}</span>${d.optional?`<span class="optional-label">Optional · only if claiming 0% duty</span>`:""}</div><input aria-label="Document notes" data-doc="${i}" data-key="notes" value="${esc(d.notes)}" placeholder="Notes" style="margin-top:6px"><input aria-label="Document link" data-doc="${i}" data-key="link" value="${esc(d.link)}" placeholder="Optional link" style="margin-top:5px"></div>
           <select aria-label="Document status" data-doc="${i}" data-key="status">${["Have","Need","Waiting"].map(s=>`<option ${d.status===s?"selected":""}>${s}</option>`).join("")}</select></div>`).join("");
-        const have=data.documents.filter(d=>d.status==="Have").length;
-        $("docProgress").textContent=`${have} / ${data.documents.length} have`;
+        const counted=data.documents.filter(d=>!d.optional||["Have","Waiting"].includes(d.status));
+        const have=counted.filter(d=>d.status==="Have").length;
+        $("docProgress").textContent=`${have} / ${counted.length} required have`;
       }
       function renderStages() {
-        $("timelineRows").innerHTML=data.stages.map((s,i)=>`<div class="stage ${s.status==="Done"?"done":s.status==="Current"?"current":""}">
-          <span class="stage-marker" aria-hidden="true"></span><div><strong>${esc(s.name)}</strong><div class="hint">${esc(s.detail)}</div></div>
-          <div><input aria-label="Stage due date" data-stage="${i}" data-key="date" type="date" value="${esc(s.date)}"><select aria-label="Stage status" data-stage="${i}" data-key="status" style="margin-top:5px">${["Waiting","Current","Done"].map(x=>`<option ${s.status===x?"selected":""}>${x}</option>`).join("")}</select></div></div>`).join("");
+        $("timelineRows").innerHTML=data.stages.map((s,i)=>{
+          const linked=(s.documentIds||[]).map(id=>data.documents.find(doc=>doc.id===id)).filter(Boolean);
+          const docs=linked.length?`<div class="stage-docs">${linked.map(doc=>{
+            const status=["Have","Need","Waiting"].includes(doc.status)?doc.status.toLowerCase():"need";
+            return `<a class="${status}" href="#documents" title="${esc(doc.name)} · ${esc(doc.status)}${doc.optional?" · Optional":""}">${esc(doc.name)} · ${esc(doc.status)}${doc.optional?" · Optional":""}</a>`;
+          }).join("")}</div>`:"";
+          return `<div class="stage ${s.status==="Done"?"done":s.status==="Current"?"current":""}">
+          <span class="stage-marker" aria-hidden="true"></span><div><strong>${esc(s.name)}</strong><div class="hint">${esc(s.phase||"Other")} · ${esc(s.detail)}</div>${s.dateTrigger==="entry"&&s.date?`<div class="hint">${s.dateMode==="manual"?"Manual date":s.dateBasis==="actualEntryDate"?"Based on actual entry date":"Planning date based on ETA; actual deadline starts on entry"}</div>`:""}${docs}</div>
+          <div><input aria-label="Stage due date" title="${s.dateTrigger==="entry"?"Clear to restore the entry-date reminder":"Enter a manual date"}" data-stage="${i}" data-key="date" type="date" value="${esc(s.date)}"><select aria-label="Stage status" data-stage="${i}" data-key="status" style="margin-top:5px">${["Waiting","Current","Done"].map(x=>`<option ${s.status===x?"selected":""}>${x}</option>`).join("")}</select></div></div>`;
+        }).join("");
+      }
+      function openDetailsForHash() {
+        const target=document.getElementById(location.hash.slice(1));
+        if(!(target instanceof HTMLDetailsElement))return;
+        target.open=true;
+        requestAnimationFrame(()=>target.scrollIntoView({block:"start"}));
       }
       function updateCarHeading() {
         const model=data.vehicle.find(field=>field.label==="Model")?.value.trim().split(",")[0].trim();
@@ -547,6 +576,8 @@
       $("editVehicle").href=`vehicle.html?id=${encodeURIComponent(carId)}`;
       syncArrivalDates(); save();
       renderInvoice(); renderCosts(); renderCostTimeline(); renderDocuments(); renderStages(); updateCarHeading(); updateSummary();
+      openDetailsForHash();
+      window.addEventListener("hashchange",openDetailsForHash);
       document.querySelectorAll("#fob, #freight, #other, #insurance, #rate, #paidJpy, #dutyRate, #vatEnabled, #omsp, #co2, #vrtBand, #nox, #vrtLow, #vrtHigh").forEach(control=>control.addEventListener("input",()=>{
         const id=control.id;
         if(invoiceFields.includes(id)) data.invoice[id]=id==="dutyRate"?number(control.value):id==="vatEnabled"?control.value==="true":number(control.value);
@@ -608,6 +639,14 @@
         if(Number.isInteger(i)&&key) {
           data.stages[i][key]=el.value;
           if(key==="date"&&data.stages[i].name==="Shipping and arrival") {
+            data.shipment.eta=el.value;
+            data.stages[i].dateMode="source";
+            data.stages[i].detail=el.value
+              ?"Expected arrival date; planning reminders use this ETA until actual entry is recorded."
+              :"Expected arrival date not confirmed with shipper.";
+          }
+          if(key==="date"&&data.stages[i].dateTrigger==="entry")data.stages[i].dateMode=el.value?"manual":"auto";
+          if(key==="date") {
             syncArrivalDates();
             renderCosts();
             renderCostTimeline();
@@ -620,6 +659,14 @@
         if(Number.isInteger(i)&&key) {
           data.stages[i][key]=el.value;
           if(key==="date"&&data.stages[i].name==="Shipping and arrival") {
+            data.shipment.eta=el.value;
+            data.stages[i].dateMode="source";
+            data.stages[i].detail=el.value
+              ?"Expected arrival date; planning reminders use this ETA until actual entry is recorded."
+              :"Expected arrival date not confirmed with shipper.";
+          }
+          if(key==="date"&&data.stages[i].dateTrigger==="entry")data.stages[i].dateMode=el.value?"manual":"auto";
+          if(key==="date") {
             syncArrivalDates();
             renderCosts();
             renderCostTimeline();

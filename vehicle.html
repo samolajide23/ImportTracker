@@ -54,32 +54,42 @@
       <div id="saveState" class="save-state" role="status" aria-live="polite" style="margin-top:14px">All changes saved</div>
     </section>
     <section class="panel arrival-panel">
-      <h2>Shipping and expected arrival</h2>
-      <div class="muted">Dates are planning estimates: customs, clearance and port costs on arrival; VRT by day 30; NCT, plates, insurance and motor tax provisionally on day 31. Confirm the VRT deadline and registration sequence with the agent/NCTS. Repairs and prep need a manual date.</div>
-      <div class="field arrival-field"><label for="expectedArrivalDate">Expected arrival date</label><input id="expectedArrivalDate" type="date"></div>
+      <h2>Shipment and customs milestones</h2>
+      <div class="muted">Keep the seller, export country, vehicle origin and ports separate; they are not interchangeable for customs. Planning dates move with the ETA until actual entry is recorded; legal reminders then use the entry date.</div>
+      <div id="shipmentFields" class="fields"></div>
+      <p class="muted">Revenue says to make an NCTS appointment within seven days of bringing the vehicle into the State and register it within 30 days. Until you record the actual entry date, dates calculated from the ETA are planning reminders only. <a href="https://www.revenue.ie/en/vrt/vehicle-registration-tax/vrt-and-registration.aspx" target="_blank" rel="noopener">Revenue guidance</a></p>
     </section>
-    <div class="footer">Keep a JSON backup from the car tracker to protect your browser-saved data.</div>
+    <div class="footer">Autosaved in this browser on this exact site address. Vercel preview and production URLs keep separate data. Use the car tracker's JSON export/import to move or back up this data.</div>
   </main>
   <script src="tracker.js"></script>
   <script>
     (() => {
       const $=id=>document.getElementById(id);
       const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
-      let carId,data,arrivalStage;
+      let carId,data;
       try {
         const fleet=ImportTrackerStore.loadFleet();
         carId=new URLSearchParams(location.search).get("id");
         const car=fleet.cars.find(item=>item.id===carId);
         if(!car)throw new Error("This car could not be found.");
         const defaults=ImportTrackerStore.defaultData();
-        data={...defaults,...car.data,vehicle:Array.isArray(car.data.vehicle)?car.data.vehicle:defaults.vehicle};
+        const savedShipment=car.data.shipment&&typeof car.data.shipment==="object"&&!Array.isArray(car.data.shipment)?car.data.shipment:{};
+        data={...defaults,...car.data,shipment:{...defaults.shipment,...savedShipment},vehicle:Array.isArray(car.data.vehicle)?car.data.vehicle:defaults.vehicle};
         if(!Array.isArray(data.stages))data.stages=defaults.stages;
-        arrivalStage=data.stages.find(stage=>stage.name==="Shipping and arrival");
-        if(!arrivalStage){arrivalStage={name:"Shipping and arrival",date:"",detail:"Confirm expected arrival with the shipper.",status:"Waiting"};data.stages.push(arrivalStage);}
+        if(!Object.prototype.hasOwnProperty.call(savedShipment,"eta"))data.shipment.eta=data.stages.find(stage=>stage.name==="Shipping and arrival")?.date||"";
+        ImportTrackerStore.normalizeCarData(data);
         $("backToCar").href=`car.html?id=${encodeURIComponent(carId)}`;
         $("subtitle").textContent=data.vehicle.find(field=>field.label==="Model")?.value||"Add this car's details.";
         $("vehicleFields").innerHTML=data.vehicle.map((field,index)=>`<div class="field"><label for="vehicle-${index}">${esc(field.label)}</label><input id="vehicle-${index}" data-index="${index}" value="${esc(field.value)}"></div>`).join("");
-        $("expectedArrivalDate").value=arrivalStage.date||"";
+        const shipmentFields=[
+          ["seller","Seller / exporter"],["sellerCountry","Seller country"],["exportCountry","Export country"],
+          ["originCountry","Vehicle country of origin"],["departurePort","Port of loading"],["destinationPort","Irish destination port"],
+          ["vessel","Vessel"],["bookingReference","Booking reference"],["etd","Estimated departure (ETD)","date"],
+          ["eta","Expected arrival (ETA)","date"],["etaSource","ETA source"],
+          ["actualEntryDate","Actual date entered Ireland","date"],["actualEntrySource","Entry date source / evidence"],
+          ["customsReleaseDate","Customs release date","date"],["customsReleaseSource","Release date source / evidence"]
+        ];
+        $("shipmentFields").innerHTML=shipmentFields.map(([key,label,type="text"])=>`<div class="field"><label for="shipment-${key}">${label}</label><input id="shipment-${key}" data-shipment="${key}" type="${type}" value="${esc(data.shipment[key])}"></div>`).join("");
       } catch(error) {
         console.error("Could not load vehicle:",error);
         alert(error.message);
@@ -104,11 +114,17 @@
         $("saveState").textContent="Saving…";
         save();
       });
-      $("expectedArrivalDate").addEventListener("input",event=>{
-        arrivalStage.date=event.target.value;
-        arrivalStage.detail=arrivalStage.date
-          ?"Expected arrival date entered here; related cost dates are estimates based on this date."
-          :"Date to confirm with the shipper; no automatic cost dates yet.";
+      $("shipmentFields").addEventListener("input",event=>{
+        const key=event.target.dataset.shipment;
+        if(!key)return;
+        data.shipment[key]=event.target.value;
+        if(key==="eta") {
+          const arrivalStage=data.stages.find(stage=>stage.name==="Shipping and arrival");
+          arrivalStage.date=event.target.value;
+          arrivalStage.detail=event.target.value
+            ?"Expected arrival date; planning reminders use this ETA until actual entry is recorded."
+            :"Expected arrival date not confirmed with shipper.";
+        }
         ImportTrackerStore.syncArrivalDates(data);
         $("saveState").textContent="Saving…";
         save();

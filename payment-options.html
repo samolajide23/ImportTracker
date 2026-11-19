@@ -50,6 +50,12 @@
     .focus-task a:hover{text-decoration:underline}
     .focus-task .muted{margin-top:2px}
     .focus-tasks .task-link{font-size:10px;color:var(--green);white-space:nowrap}
+    .focus-phase+.focus-phase{margin-top:5px;padding-top:5px;border-top:1px solid var(--line)}
+    .focus-phase-title{margin:0 0 2px;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+    .focus-doc-links{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+    .focus-doc-links a{padding:1px 6px;border-radius:99px;background:var(--soft);color:var(--muted)!important;font-size:9px}
+    .focus-doc-links a.have{background:var(--green-soft);color:var(--green)!important}
+    .focus-doc-links a.need{background:var(--amber-soft);color:var(--amber)!important}
     .timeline{position:relative;padding-left:22px}
     .timeline:before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--line)}
     .timeline-item{position:relative;display:grid;grid-template-columns:95px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 0}

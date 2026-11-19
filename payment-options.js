@@ -14,7 +14,9 @@
   const statusClass=e=>e.kind==="step"?"step":e.kind==="payment"||e.status==="charged"?"due":"estimate";
   const timing=e=>{
     if(e.date)return dateText(e.date);
-    if(/30 days/i.test(e.detail||""))return "Within 30 days · arrival date needed";
+    if(/actual entry/i.test(e.detail||""))return "Actual-entry deadline · date needed";
+    if(/30 days/i.test(e.detail||""))return "Within 30 days of entry · date needed";
+    if(/eta/i.test(e.detail||""))return "ETA-based planning date needed";
     if(/arrival/i.test(e.detail||""))return "On arrival · date needed";
     return "Date to confirm";
   };
@@ -27,7 +29,10 @@
       const push=(kind,name,date,detail,amount,status)=>events.push({id:car.id,car:carName(d),kind,name,date:date||"",detail,amount,rate,status});
       if(balance>0)push("payment","Invoice balance",i.dueDate,"Invoice payment",balance/Math.max(rate,0.000001),"due");
       const cif=rate>0?total/rate:0,duty=cif*n(i.dutyRate),vat=i.vatEnabled?(cif+duty)*0.23:0;
-      for(const [key,name,estimate,detail] of [["duty","Customs duty",duty,"On arrival"],["vat","Import VAT",vat,"On arrival"],["vrt","VRT",n(v.high),"Within 30 days of arrival"]]) {
+      const actualEntry=d.shipment?.actualEntryDate,eta=d.shipment?.eta;
+      const arrivalTiming=actualEntry?"At recorded entry date":eta?"On ETA · planning estimate":"On arrival · date to confirm";
+      const vrtTiming=actualEntry?"Within 30 days of actual entry · Revenue":eta?"ETA + 30 days · planning only; confirm actual entry":"Within 30 days of entry · date to confirm";
+      for(const [key,name,estimate,detail] of [["duty","Customs duty",duty,arrivalTiming],["vat","Import VAT",vat,arrivalTiming],["vrt","VRT",n(v.high),vrtTiming]]) {
         const record=d.charges?.[key]||{actual:0,status:"estimated",date:""};
         const amount=record.status==="charged"&&n(record.actual)>0?n(record.actual):estimate;
         if(record.status!=="paid"&&amount>0)push("charge",name,record.date,detail,amount,record.status||"estimated");
@@ -36,14 +41,17 @@
         if(cost.status==="paid")continue;
         const amount=cost.status==="charged"&&n(cost.actual)>0?n(cost.actual):Math.max(n(cost.estimate),n(cost.actual));
         const offset=ImportTrackerStore.costDateOffset(cost.category);
-        const detail=cost.dateMode==="manual"
-          ?cost.date?"Manually scheduled":"Date to confirm"
-          :offset===0?"On arrival"
-          :offset===31?"After VRT · day 31 estimate":"Date to confirm";
+        const detail=cost.dateMode==="manual"?"Manual date":offset===0?actualEntry?"Based on actual entry date":eta?"Planning date based on ETA":"Date to confirm":"Date to confirm";
         if(amount>0)push("cost",cost.category,cost.date,detail,amount,cost.status||"estimated");
       }
+      if(d.shipment?.actualEntryDate)push("step","Vehicle entered Ireland",d.shipment.actualEntryDate,`Recorded actual entry date${d.shipment.actualEntrySource?` · Source: ${d.shipment.actualEntrySource}`:""} · Revenue deadlines start from entry`,null,"step");
+      if(d.shipment?.customsReleaseDate)push("step","Customs release",d.shipment.customsReleaseDate,`Recorded customs release date${d.shipment.customsReleaseSource?` · Source: ${d.shipment.customsReleaseSource}`:""}`,null,"step");
       for(const stage of d.stages||[]) {
-        if(stage.date&&stage.status!=="Done"&&stage.name!=="Pay invoice balance")push("step",stage.name,stage.date,stage.detail,null,"step");
+        if(stage.date&&stage.status!=="Done"&&stage.name!=="Pay invoice balance") {
+          const basis=stage.dateTrigger?(stage.dateMode==="manual"?"Manual date override":stage.dateBasis==="actualEntryDate"?"Based on actual entry date":"Planning date based on ETA"):"";
+          const etaSource=stage.name==="Shipping and arrival"&&d.shipment?.etaSource?`ETA source: ${d.shipment.etaSource}`:"";
+          push("step",stage.name,stage.date,[stage.detail,basis,etaSource].filter(Boolean).join(" · "),null,"step");
+        }
       }
     }
     return events.sort((a,b)=>(a.date||"9999-12-31").localeCompare(b.date||"9999-12-31")).slice(0,20);
@@ -83,7 +91,17 @@
     const empty=`<div class="empty">No payments or dated steps are recorded.</div>`;
     if(index===1) {
       const tasks=ImportTrackerStore.collectTodoItems(car),shownTasks=tasks.slice(0,3);
-      const todoList=tasks.length?shownTasks.map(task=>`<div class="focus-task"><span class="task-check" aria-hidden="true"></span><div><a class="event-title" href="${href({id:car.id})}">${esc(task.title)}</a><div class="muted">${esc(task.date?dateText(task.date):task.status)}${task.detail?` · ${esc(task.detail)}`:""}</div></div><a class="task-link" href="${href({id:car.id})}">Open →</a></div>`).join(""):`<div class="muted">All caught up.</div>`;
+      const taskGroups=new Map();
+      for(const task of shownTasks) {
+        const phase=task.phase||"Other";
+        if(!taskGroups.has(phase))taskGroups.set(phase,[]);
+        taskGroups.get(phase).push(task);
+      }
+      const todoList=tasks.length?[...taskGroups].map(([phase,items])=>`<div class="focus-phase"><div class="focus-phase-title">${esc(phase)}</div>${items.map(task=>{
+        const taskUrl=`${href({id:car.id})}#${task.kind==="document"?"documents":"timeline"}`;
+        const docLinks=(task.documents||[]).slice(0,2).map(doc=>`<a class="${doc.status==="Have"?"have":doc.status==="Need"?"need":""}" href="${href({id:car.id})}#documents" title="${esc(doc.name)} · ${esc(doc.status)}">${esc(doc.name)} · ${esc(doc.status)}</a>`).join("");
+        return `<div class="focus-task"><span class="task-check" aria-hidden="true"></span><div><a class="event-title" href="${taskUrl}">${esc(task.title)}</a><div class="muted">${esc(task.date?dateText(task.date):task.status)}${task.dateBasis?` · ${esc(task.dateBasis)}`:""}${task.detail?` · ${esc(task.detail)}`:""}</div>${docLinks?`<div class="focus-doc-links">${docLinks}</div>`:""}</div><a class="task-link" href="${taskUrl}">Open →</a></div>`;
+      }).join("")}</div>`).join(""):`<div class="muted">All caught up.</div>`;
       const todoSection=`<section class="focus-tasks"><h3><span>To do</span><span class="muted">${tasks.length} open</span></h3>${todoList}${tasks.length>3?`<a class="task-link" href="${href({id:car.id})}">View all ${tasks.length} tasks →</a>`:""}</section>`;
       return `<div class="view"><div class="section-title"><div><h2>Next payment</h2><p>${title}</p></div><span class="badge">${dated?esc(statusText(dated)):"No payment date"}</span></div>${dated?`<a href="${href(dated)}" style="color:inherit;text-decoration:none"><div class="focus-amount"><div><span class="muted">${esc(dated.name)} · ${esc(timing(dated))}</span><div class="event-title">Open payment details →</div></div>${pair(dated.amount,dated.rate)}</div></a><h3 style="font-size:12px;margin:14px 0 0">Other planned costs</h3><div class="focus-list">${events.filter(e=>e!==dated).slice(0,4).map(entry).join("")}</div>${todoSection}<div class="unknown">Costs marked “date to confirm” are estimates, not scheduled bills.</div>`:todoSection+empty}</div>`;
     }

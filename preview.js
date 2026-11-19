@@ -25,12 +25,13 @@
     const events=[];
     for(const car of cars) {
       const d=car.data||{},calc=calculate(d),i=d.invoice||{},v=d.vrt||{};
+      const actualEntry=d.shipment?.actualEntryDate,eta=d.shipment?.eta;
       const push=(name,dateValue,amount,detail,kind="Payment")=>events.push({id:car.id,car:carModel(car),name,date:dateValue||"",amount,rate:calc.rate,detail,kind});
       if(calc.invoiceBalance>0)push("Invoice balance",i.dueDate,calc.invoiceBalance,"Invoice payment");
       for(const [key,name,amount,detail] of [
-        ["duty","Customs duty",calc.duty,"At arrival"],
-        ["vat","Import VAT",calc.vat,"At arrival"],
-        ["vrt","VRT",n(v.high),"Within 30 days of arrival"]
+        ["duty","Customs duty",calc.duty,actualEntry?"At recorded entry date":eta?"On ETA · planning estimate":"On arrival · date to confirm"],
+        ["vat","Import VAT",calc.vat,actualEntry?"At recorded entry date":eta?"On ETA · planning estimate":"On arrival · date to confirm"],
+        ["vrt","VRT",n(v.high),actualEntry?"Within 30 days of actual entry · Revenue":eta?"ETA + 30 days · planning only; confirm actual entry":"Within 30 days of entry · date to confirm"]
       ]) {
         const record=d.charges?.[key]||{status:"estimated",actual:0,date:""};
         const value=record.status==="charged"&&n(record.actual)>0?n(record.actual):amount;
@@ -39,10 +40,17 @@
       for(const cost of d.costs||[]) {
         if(cost.status==="paid")continue;
         const amount=cost.status==="charged"&&n(cost.actual)>0?n(cost.actual):Math.max(n(cost.estimate),n(cost.actual));
-        if(amount>0)push(cost.category,cost.date,amount,cost.date?"Scheduled":"Date to confirm","Cost");
+        const detail=cost.dateMode==="manual"?"Manual date":ImportTrackerStore.costDateOffset(cost.category)===0?actualEntry?"Based on actual entry date":eta?"Planning date based on ETA":"Date to confirm":"Date to confirm";
+        if(amount>0)push(cost.category,cost.date,amount,detail,"Cost");
       }
+      if(actualEntry)push("Vehicle entered Ireland",actualEntry, null,`Recorded actual entry date${d.shipment.actualEntrySource?` · Source: ${d.shipment.actualEntrySource}`:""} · Revenue deadlines start from entry`,"Milestone");
+      if(d.shipment?.customsReleaseDate)push("Customs release",d.shipment.customsReleaseDate,null,`Recorded customs release date${d.shipment.customsReleaseSource?` · Source: ${d.shipment.customsReleaseSource}`:""}`,"Milestone");
       for(const stage of d.stages||[]) {
-        if(stage.date&&stage.status!=="Done"&&stage.name!=="Pay invoice balance") events.push({id:car.id,car:carModel(car),name:stage.name,date:stage.date,amount:null,rate:calc.rate,detail:stage.detail,kind:"Next step"});
+        if(stage.date&&stage.status!=="Done"&&stage.name!=="Pay invoice balance") {
+          const basis=stage.dateTrigger?(stage.dateMode==="manual"?"Manual date override":stage.dateBasis==="actualEntryDate"?"Based on actual entry date":"Planning date based on ETA"):"";
+          const etaSource=stage.name==="Shipping and arrival"&&d.shipment?.etaSource?`ETA source: ${d.shipment.etaSource}`:"";
+          events.push({id:car.id,car:carModel(car),name:stage.name,date:stage.date,amount:null,rate:calc.rate,detail:[stage.detail,basis,etaSource].filter(Boolean).join(" · "),kind:"Next step"});
+        }
       }
     }
     return events.sort((a,b)=>(a.date||"9999-12-31").localeCompare(b.date||"9999-12-31")).slice(0,20);
