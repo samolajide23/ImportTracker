@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fa">
+  <title>Edit vehicle · Import Tracker</title>
+  <style>
+    :root {
+      color-scheme:light; --bg:#f5f7fa; --panel:#fff; --text:#17212b; --muted:#647383;
+      --line:#dce3e9; --accent:#145c88; --accent-soft:#e6f2f8; --green:#18764b;
+      --green-soft:#e6f5ed; --shadow:0 5px 20px #142b3a0c;
+    }
+    [data-theme="dark"] {
+      color-scheme:dark; --bg:#111820; --panel:#1b2630; --text:#e8eef3; --muted:#a5b2bd;
+      --line:#34434f; --accent:#83c8ed; --accent-soft:#203b4b; --green:#8fdbb1;
+      --green-soft:#203b30; --shadow:0 5px 20px #0003;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    button,input,a { font:inherit; }
+    button,a { border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:9px; padding:9px 13px; cursor:pointer; text-decoration:none; }
+    button:hover,a:hover { border-color:var(--accent); }
+    .primary { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
+    [data-theme="dark"] .primary { color:#10202a; }
+    .shell { max-width:860px; margin:auto; padding:24px; }
+    header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:22px; }
+    h1 { font-size:clamp(25px,4vw,34px); letter-spacing:-.03em; margin:0; }
+    h2 { font-size:18px; margin:0 0 5px; }
+    .muted { color:var(--muted); font-size:13px; }
+    .actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:var(--shadow); }
+    .arrival-panel { margin-bottom:16px; }
+    .arrival-field { max-width:340px; margin-top:14px; }
+    .fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:18px; }
+    .field { min-width:0; }
+    label { display:block; font-size:12px; font-weight:700; color:var(--muted); margin:0 0 5px; }
+    input { width:100%; min-width:0; border:1px solid var(--line); border-radius:8px; padding:10px; color:var(--text); background:var(--panel); }
+    .save-state { color:var(--green); font-size:12px; font-weight:700; }
+    .footer { color:var(--muted); text-align:center; font-size:12px; padding:16px 0; }
+    @media(max-width:600px) { .shell{padding:14px}.fields{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column} }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div><h1>Edit vehicle</h1><div id="subtitle" class="muted">Vehicle details are saved in this browser.</div></div>
+      <div class="actions"><a id="backToCar" class="primary" href="index.html">Back to tracker</a><button id="themeToggle" type="button">🌙 Dark mode</button></div>
+    </header>
+    <section class="panel">
+      <h2>Vehicle information</h2>
+      <div class="muted">Update identifiers, specifications, mileage, and registration details. Changes save automatically.</div>
+      <div id="vehicleFields" class="fields"></div>
+      <div id="saveState" class="save-state" role="status" aria-live="polite" style="margin-top:14px">All changes saved</div>
+    </section>
+    <section class="panel arrival-panel">
+      <h2>Shipping and expected arrival</h2>
+      <div class="muted">Dates are planning estimates: customs, clearance and port costs on arrival; VRT by day 30; NCT, plates, insurance and motor tax provisionally on day 31. Confirm the VRT deadline and registration sequence with the agent/NCTS. Repairs and prep need a manual date.</div>
+      <div class="field arrival-field"><label for="expectedArrivalDate">Expected arrival date</label><input id="expectedArrivalDate" type="date"></div>
+    </section>
+    <div class="footer">Keep a JSON backup from the car tracker to protect your browser-saved data.</div>
+  </main>
+  <script src="tracker.js"></script>
+  <script>
+    (() => {
+      const $=id=>document.getElementById(id);
+      const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+      let carId,data,arrivalStage;
+      try {
+        const fleet=ImportTrackerStore.loadFleet();
+        carId=new URLSearchParams(location.search).get("id");
+        const car=fleet.cars.find(item=>item.id===carId);
+        if(!car)throw new Error("This car could not be found.");
+        const defaults=ImportTrackerStore.defaultData();
+        data={...defaults,...car.data,vehicle:Array.isArray(car.data.vehicle)?car.data.vehicle:defaults.vehicle};
+        if(!Array.isArray(data.stages))data.stages=defaults.stages;
+        arrivalStage=data.stages.find(stage=>stage.name==="Shipping and arrival");
+        if(!arrivalStage){arrivalStage={name:"Shipping and arrival",date:"",detail:"Confirm expected arrival with the shipper.",status:"Waiting"};data.stages.push(arrivalStage);}
+        $("backToCar").href=`car.html?id=${encodeURIComponent(carId)}`;
+        $("subtitle").textContent=data.vehicle.find(field=>field.label==="Model")?.value||"Add this car's details.";
+        $("vehicleFields").innerHTML=data.vehicle.map((field,index)=>`<div class="field"><label for="vehicle-${index}">${esc(field.label)}</label><input id="vehicle-${index}" data-index="${index}" value="${esc(field.value)}"></div>`).join("");
+        $("expectedArrivalDate").value=arrivalStage.date||"";
+      } catch(error) {
+        console.error("Could not load vehicle:",error);
+        alert(error.message);
+        location.replace("index.html");
+        return;
+      }
+      const save=()=>{
+        try {
+          ImportTrackerStore.saveCar(carId,data);
+          $("saveState").textContent="All changes saved";
+          $("subtitle").textContent=data.vehicle.find(field=>field.label==="Model")?.value||"Add this car's details.";
+          document.title=`Edit ${data.vehicle.find(field=>field.label==="Model")?.value||"vehicle"} · Import Tracker`;
+        } catch(error) {
+          console.error("Could not save vehicle:",error);
+          $("saveState").textContent=error.message;
+        }
+      };
+      $("vehicleFields").addEventListener("input",event=>{
+        const index=Number(event.target.dataset.index);
+        if(!Number.isInteger(index))return;
+        data.vehicle[index].value=event.target.value;
+        $("saveState").textContent="Saving…";
+        save();
+      });
+      $("expectedArrivalDate").addEventListener("input",event=>{
+        arrivalStage.date=event.target.value;
+        arrivalStage.detail=arrivalStage.date
+          ?"Expected arrival date entered here; related cost dates are estimates based on this date."
+          :"Date to confirm with the shipper; no automatic cost dates yet.";
+        ImportTrackerStore.syncArrivalDates(data);
+        $("saveState").textContent="Saving…";
+        save();
+      });
+      $("themeToggle").addEventListener("click",()=>{
+        const dark=document.documentElement.dataset.theme!=="dark";
+        document.documentElement.dataset.theme=dark?"dark":"light";
+        $("themeToggle").textContent=dark?"☀️ Light mode":"🌙 Dark mode";
+        localStorage.setItem("mazda3-import-theme",dark?"dark":"light");
+      });
+      if(localStorage.getItem("mazda3-import-theme")==="dark") {
+        document.documentElement.dataset.theme="dark";
+        $("themeToggle").textContent="☀️ Light mode";
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fa">
+  <title>Car Import Tracker</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fa; --panel: #fff; --text: #17212b; --muted: #647383;
+      --line: #dce3e9; --accent: #145c88; --accent-soft: #e6f2f8;
+      --green: #18764b; --green-soft: #e6f5ed; --amber: #8b5b00;
+      --amber-soft: #fff3d8; --red: #a53d35; --red-soft: #fce9e7;
+      --shadow: 0 5px 20px #142b3a0c;
+    }
+    [data-theme="dark"] {
+      color-scheme: dark; --bg: #111820; --panel: #1b2630; --text: #e8eef3;
+      --muted: #a5b2bd; --line: #34434f; --accent: #83c8ed; --accent-soft: #203b4b;
+      --green: #8fdbb1; --green-soft: #203b30; --amber: #f0c36d;
+      --amber-soft: #45371d; --red: #ff9a8f; --red-soft: #482725;
+      --shadow: 0 5px 20px #0003;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    button, input, select, textarea { font: inherit; }
+    button, .button { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 9px; padding: 9px 13px; cursor: pointer; }
+    button:hover, .button:hover { border-color: var(--accent); }
+    input, select, textarea { min-width: 0; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 7px; padding: 8px 9px; width: 100%; }
+    input[type="checkbox"] { width: auto; accent-color: var(--accent); }
+    label { color: var(--muted); font-size: 12px; font-weight: 650; display: block; margin-bottom: 5px; }
+    .shell { max-width: 1160px; margin: auto; padding: 24px; }
+    header { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin-bottom:22px; }
+    h1 { font-size: clamp(24px, 4vw, 34px); letter-spacing:-.03em; margin:0; }
+    h2 { font-size:20px; margin:0; letter-spacing:-.02em; }
+    h3 { font-size:15px; margin:0 0 12px; }
+    p { margin:8px 0; }
+    .subtle, .hint { color:var(--muted); font-size:13px; }
+    .head-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    nav { display:flex; gap:8px; overflow-x:auto; padding:0 0 14px; border-bottom:1px solid var(--line); margin-bottom:18px; }
+    nav a { white-space:nowrap; text-decoration:none; color:var(--muted); padding:7px 12px; border-radius:999px; font-weight:650; }
+    nav a:hover { background:var(--accent-soft); color:var(--accent); }
+    .next { border:1px solid #e6c980; background:var(--amber-soft); color:var(--text); padding:16px 18px; border-radius:13px; display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px; box-shadow:var(--shadow); }
+    .next strong { display:block; font-size:16px; }
+    .grid { display:grid; gap:14px; }
+    .cards { grid-template-columns:repeat(4, minmax(0,1fr)); margin-bottom:18px; }
+    .two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .panel, .metric { background:var(--panel); border:1px solid var(--line); border-radius:13px; box-shadow:var(--shadow); }
+    .panel { padding:18px; margin-bottom:16px; }
+    .visual-grid { display:grid; grid-template-columns:1fr 1.15fr; gap:14px; margin-bottom:16px; }
+    .visual-panel { padding:18px; min-width:0; }
+    .visual-panel h2 { font-size:17px; }
+    .stacked-bar { display:flex; height:15px; overflow:hidden; border-radius:99px; background:var(--line); margin:18px 0; }
+    .stacked-segment { min-width:2px; }
+    .stacked-segment.cif { background:#237da2; }
+    .stacked-segment.duty { background:#6b78c7; }
+    .stacked-segment.vat { background:#b28ad2; }
+    .stacked-segment.vrt { background:#df9a43; }
+    .stacked-segment.fees { background:#59a77e; }
+    .chart-legend { display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; }
+    .legend-item { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12px; }
+    .legend-name { display:flex; align-items:center; gap:7px; color:var(--muted); }
+    .swatch { width:9px; height:9px; border-radius:3px; flex:none; }
+    .swatch.cif { background:#237da2; }
+    .swatch.duty { background:#6b78c7; }
+    .swatch.vat { background:#b28ad2; }
+    .swatch.vrt { background:#df9a43; }
+    .swatch.fees { background:#59a77e; }
+    .timeline-chart-wrap { overflow-x:auto; }
+    .timeline-chart { display:block; width:100%; min-width:0; height:auto; }
+    .chart-gridline { stroke:var(--line); stroke-width:1; }
+    .chart-axis-label,.chart-stage-label,.chart-date-label { fill:var(--muted); font-family:inherit; }
+    .chart-axis-label { font-size:14px; }
+    .chart-stage-label { fill:var(--text); font-size:15px; font-weight:700; }
+    .chart-date-label { font-size:12px; }
+    .chart-band { fill:var(--accent-soft); opacity:.95; }
+    .chart-low-line,.chart-high-line { fill:none; stroke:var(--accent); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+    .chart-low-line { stroke-dasharray:5 5; opacity:.8; }
+    .chart-point { fill:var(--panel); stroke:var(--accent); stroke-width:3; }
+    .edit-details { border:1px solid var(--line); border-radius:12px; background:var(--panel); margin:14px 0; overflow:hidden; }
+    .edit-details > summary { cursor:pointer; padding:15px 18px; font-weight:700; list-style:none; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .edit-details > summary::-webkit-details-marker { display:none; }
+    .edit-details > summary::after { content:"＋"; color:var(--accent); font-size:20px; }
+    .edit-details[open] > summary::after { content:"−"; }
+    .details-content { padding:0 18px 18px; }
+    .metric { padding:15px 17px; }
+    .metric .value { font-size:22px; font-weight:750; letter-spacing:-.03em; display:block; margin-top:4px; }
+    .metric .caption { color:var(--muted); font-size:12px; }
+    .jpy-equivalent, .eur-equivalent { display:block; color:var(--muted); font-size:10px; font-weight:400; line-height:1.25; letter-spacing:0; margin-top:2px; }
+    .section-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+    .fields { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .field { min-width:0; }
+    .field.wide { grid-column:span 2; }
+    .field.full { grid-column:1/-1; }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .primary { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
+    [data-theme="dark"] .primary { color:#10202a; }
+    .status { display:inline-block; padding:3px 9px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-weight:700; font-size:12px; }
+    .status.have, .status.paid { background:var(--green-soft); color:var(--green); }
+    .status.need, .status.estimated { background:var(--amber-soft); color:var(--amber); }
+    .status.waiting, .status.quoted, .status.charged { background:var(--accent-soft); color:var(--accent); }
+    .warning { background:var(--amber-soft); border-left:4px solid #d5a333; padding:11px 13px; border-radius:7px; margin:12px 0; }
+    .danger { background:var(--red-soft); border-left:4px solid var(--red); padding:11px 13px; border-radius:7px; margin:12px 0; }
+    .table-wrap { overflow-x:auto; }
+    table { border-collapse:collapse; width:100%; min-width:760px; }
+    .cost-timeline table { min-width:1020px; }
+    th, td { padding:9px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle; }
+    th { color:var(--muted); font-size:12px; }
+    td input, td select { min-width:90px; }
+    td:first-child input { min-width:130px; }
+    .row-remove { padding:5px 8px; color:var(--red); }
+    .check-row, .stage { display:grid; grid-template-columns:auto 1fr minmax(125px,170px); align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
+    .check-row:last-child, .stage:last-child { border-bottom:0; }
+    .check-row strong, .stage strong { display:block; }
+    .check-row .hint, .stage .hint { margin:1px 0 0; }
+    .stage-marker { width:12px; height:12px; border:2px solid var(--line); border-radius:50%; }
+    .stage.done .stage-marker { background:var(--green); border-color:var(--green); }
+    .stage.current .stage-marker { background:var(--accent); border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
+    .document-list { margin-top:8px; }
+    .footer { color:var(--muted); font-size:12px; text-align:center; padding:12px 0 25px; }
+    .hidden { display:none !important; }
+    @media (max-width:780px) {
+      .shell { padding:16px; } header { flex-direction:column; }
+      .head-actions { justify-content:flex-start; }
+      .cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .two { grid-template-columns:1fr; }
+      .visual-grid { grid-template-columns:1fr; }
+      .timeline-chart { min-width:560px; }
+    }
+    @media (max-width:460px) {
+      .shell { padding:12px; } .cards { gap:8px; }
+      .metric { padding:12px; } .metric .value { font-size:18px; }
+      .fields { gap:9px; } .next { align-items:flex-start; flex-direction:column; }
+      .check-row, .stage { grid-template-columns:auto 1fr; }
+      .check-row select, .stage input { grid-column:2; }
+      .field.wide { grid-column:1/-1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <h1 id="carPageTitle">Car import tracker</h1>
+        <div class="subtle" id="carPageSubtitle">Your car details and import records</div>
+      </div>
+      <div class="head-actions">
+        <a class="button" href="index.html">← All cars</a>
+        <a class="button primary" id="editVehicle" href="vehicle.html">Edit car</a>
+        <button id="themeToggle" type="button" aria-label="Toggle light and dark mode">🌙 Dark mode</button>
+        <button id="exportJson" type="button">Export JSON</button>
+        <button id="importButton" type="button">Import JSON</button>
+        <input id="importFile" class="hidden" type="file" accept="application/json,.json">
+      </div>
+    </header>
+    <nav aria-label="Main sections">
+      <a href="#overview">Overview</a><a href="#costs">Costs</a><a href="#documents">Documents</a><a href="#timeline">Stages</a>
+    </nav>
+    <section id="overview">
+      <div class="next">
+        <div><strong id="nextPaymentTitle">Next action · Pay ¥24,500 outstanding</strong><span class="subtle" id="nextPaymentDetail">Due 27 Nov 2026 at 14:11 · invoice time zone not stated</span></div>
+        <span class="status need">Payment due</span>
+      </div>
+      <div class="grid cards">
+        <div class="metric"><span class="caption">Estimated all-in · low</span><strong class="value" id="totalLow">—</strong><span class="caption">Includes VRT and fees</span></div>
+        <div class="metric"><span class="caption">Estimated all-in · high</span><strong class="value" id="totalHigh">—</strong><span class="caption">Includes VRT and fees</span></div>
+        <div class="metric"><span class="caption">Paid so far</span><strong class="value" id="paidTotal">—</strong><span class="caption">Recorded payments only</span></div>
+        <div class="metric"><span class="caption">Remaining · high estimate</span><strong class="value" id="remainingTotal">—</strong><span class="caption">Less recorded payments</span></div>
+      </div>
+      <div class="visual-grid">
+        <article class="panel visual-panel">
+          <div class="section-head"><div><h2>Where the money goes</h2><div class="hint">Estimated cost mix; values shown in euros.</div></div><span class="status waiting">Estimate</span></div>
+          <div id="costBreakdownChart"></div>
+        </article>
+        <article class="panel visual-panel">
+          <div class="section-head"><div><h2>Spend by import stage</h2><div class="hint">Cumulative low-to-high estimate of upcoming spend.</div></div></div>
+          <div class="timeline-chart-wrap" id="spendTimelineChart"></div>
+          <div class="hint" id="timelineChartNote"></div>
+        </article>
+      </div>
+      <details class="edit-details">
+        <summary>Customs assumptions and duty scenarios</summary>
+        <div class="details-content">
+          <div class="grid two">
+            <div><strong id="scenarioA">10% duty scenario: —</strong><div class="hint">Assumes 23% VAT on CIF plus duty.</div></div>
+            <div><strong id="scenarioB">0% duty scenario: —</strong><div class="hint">0% duty eligibility depends on origin and shipping documents.</div></div>
+          </div>
+          <div class="warning">Revenue uses its own monthly customs exchange rate for the month the ship arrives. The working rate and all duty, VAT, VRT, and fee figures are unverified estimates.</div>
+        </div>
+      </details>
+    </section>
+
+    <section id="costs" class="panel">
+      <div class="section-head"><div><h2>Costs</h2><div class="hint">Adjust estimates and record payments when you have updates.</div></div><div class="actions"><button id="exportCsv" type="button">Export CSV</button></div></div>
+      <details class="edit-details">
+        <summary>Update cost assumptions and charge records</summary>
+        <div class="details-content">
+      <h3>Invoice and customs assumptions</h3>
+      <div class="fields">
+        <div class="field"><label for="fob">Car / FOB (JPY)</label><input id="fob" type="number" min="0" step="1"><small class="eur-equivalent" data-invoice-eur="fob"></small></div>
+        <div class="field"><label for="freight">Freight (JPY)</label><input id="freight" type="number" min="0" step="1"><small class="eur-equivalent" data-invoice-eur="freight"></small></div>
+        <div class="field"><label for="other">Other cost (JPY)</label><input id="other" type="number" min="0" step="1"><small class="eur-equivalent" data-invoice-eur="other"></small></div>
+        <div class="field"><label for="insurance">Insurance (JPY)</label><input id="insurance" type="number" min="0" step="1"><small class="eur-equivalent" data-invoice-eur="insurance"></small></div>
+        <div class="field"><label for="rate">Working exchange rate (JPY per €1)</label><input id="rate" type="number" min="0.0001" step="0.01"></div>
+        <div class="field"><label for="paidJpy">Paid on invoice (JPY)</label><input id="paidJpy" type="number" min="0" step="1"><small class="eur-equivalent" data-invoice-eur="paidJpy"></small></div>
+        <div class="field"><label for="dutyRate">Duty rate</label><select id="dutyRate"><option value="0.1">10%</option><option value="0">0%</option></select></div>
+        <div class="field"><label for="vatEnabled">Import VAT</label><select id="vatEnabled"><option value="true">On · 23%</option><option value="false">Off</option></select></div>
+      </div>
+      <div class="hint" id="invoiceEuro" style="margin-top:10px"></div>
+      <div class="grid two" style="margin-top:18px">
+        <div>
+          <h3>VRT helper · estimate only</h3>
+          <div class="fields">
+            <div class="field"><label for="omsp">OMSP (€)</label><input id="omsp" type="number" min="0" step="1"><small class="jpy-equivalent" data-vrt-jpy="omsp"></small></div>
+            <div class="field"><label for="co2">CO₂ (g/km)</label><input id="co2" type="number" min="0" step="1"></div>
+            <div class="field"><label for="vrtBand">CO₂ band rate (%)</label><input id="vrtBand" type="number" min="0" max="100" step="0.1"></div>
+            <div class="field"><label for="nox">NOx levy (€)</label><input id="nox" type="number" min="0" max="600" step="1"><small class="jpy-equivalent" data-vrt-jpy="nox"></small></div>
+            <div class="field"><label for="vrtLow">VRT range low (€)</label><input id="vrtLow" type="number" min="0" step="1"><small class="jpy-equivalent" data-vrt-jpy="low"></small></div>
+            <div class="field"><label for="vrtHigh">VRT range high (€)</label><input id="vrtHigh" type="number" min="0" step="1"><small class="jpy-equivalent" data-vrt-jpy="high"></small></div>
+          </div>
+          <div id="emissionsWarning" class="warning">Emissions evidence missing: Revenue may apply the highest VRT rates, up to 41% of OMSP plus up to €600 NOx for petrol.</div>
+          <div class="hint" id="vrtEstimate"></div>
+        </div>
+        <div>
+          <h3>Cost summary</h3>
+          <div class="hint" id="calculationBreakdown"></div>
+        </div>
+      </div>
+      <div class="panel cost-timeline" id="costTimeline">
+        <div class="section-head"><div><h3 style="margin:0">Cost timeline</h3><div class="hint">Track expected charges, payment dates, and what is still outstanding.</div></div></div>
+        <div class="hint" id="arrivalScheduleNote" style="margin-bottom:12px"></div>
+        <div class="grid cards">
+          <div class="metric"><span class="caption">Paid so far</span><strong class="value" id="timelinePaid">—</strong></div>
+          <div class="metric"><span class="caption">Due / charged but unpaid</span><strong class="value" id="timelineDue">—</strong></div>
+          <div class="metric"><span class="caption">Further spend estimated</span><strong class="value" id="timelineFuture">—</strong><span class="caption">Low–high range</span></div>
+          <div class="metric"><span class="caption">Still to spend / pay · high</span><strong class="value" id="timelineOutstanding">—</strong></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Cost</th><th>Expected timing</th><th>Estimate</th><th>Charged / actual</th><th>Waiting</th><th>Status</th><th>Due / charged date</th></tr></thead>
+            <tbody id="costTimelineRows"></tbody>
+          </table>
+        </div>
+        <div class="hint" style="margin-top:8px">Dates are planning estimates, not confirmed payment deadlines. Edit a generated date to override it, or clear it to restore automatic timing.</div>
+      </div>
+      <div class="section-head" style="margin-top:22px"><div><h3 style="margin:0">Other costs</h3><div class="hint">Dates for arrival and registration costs follow the expected arrival date. Edit a date to make it manual.</div></div><button id="addCost" type="button">+ Add line</button></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Category</th><th>Estimate (€)</th><th>Actual (€)</th><th>Status</th><th>Date</th><th>Notes / receipt URL</th><th></th></tr></thead>
+          <tbody id="costRows"></tbody>
+        </table>
+      </div>
+        </div>
+      </details>
+    </section>
+
+    <details id="documents" class="edit-details">
+      <summary>Documents checklist <span class="status waiting" id="docProgress">0 / 13 have</span></summary>
+      <div class="details-content"><div class="hint">Confirm the final requirements with your clearance agent and NCTS.</div><div id="documentRows" class="document-list"></div></div>
+    </details>
+    <details id="timeline" class="edit-details">
+      <summary>Import stages and due dates</summary>
+      <div class="details-content"><div class="hint">Dates marked as estimated or to confirm are not confirmed.</div><div id="timelineRows"></div></div>
+    </details>
+    <div class="footer">Stored locally in this browser. Export a JSON backup regularly. This tracker is not tax or registration advice.</div>
+  </main>
+  <script src="tracker.js"></script>
+  <script>
+    (() => {
+      const seed = ImportTrackerStore.defaultData();
+      const clone = obj => JSON.parse(JSON.stringify(obj));
+      const mergeData = (saved) => {
+        if (!saved || typeof saved !== "object" || Array.isArray(saved)) throw new Error("JSON must contain an object.");
+        const base = clone(seed);
+        if (saved.invoice && typeof saved.invoice === "object") Object.assign(base.invoice, saved.invoice);
+        if (saved.vrt && typeof saved.vrt === "object") Object.assign(base.vrt, saved.vrt);
+        if (saved.charges && typeof saved.charges === "object" && !Array.isArray(saved.charges)) {
+          for (const key of ["duty","vat","vrt"]) {
+            if (saved.charges[key] && typeof saved.charges[key] === "object") Object.assign(base.charges[key], saved.charges[key]);
+          }
+        }
+        for (const key of ["costs","documents","stages","vehicle"]) {
+          if (saved[key] !== undefined) {
+            if (!Array.isArray(saved[key]) || saved[key].some(row => !row || typeof row !== "object" || Array.isArray(row))) throw new Error(`Invalid ${key} data.`);
+            base[key] = saved[key];
+          }
+        }
+        for(const key of ["duty","vat","vrt"]) {
+          if(!saved.charges?.[key] || !Object.prototype.hasOwnProperty.call(saved.charges[key],"dateMode")) {
+            base.charges[key].dateMode=base.charges[key].date?"manual":"auto";
+          }
+        }
+        if(Array.isArray(saved.costs)) {
+          base.costs.forEach(cost=>{
+            if(!Object.prototype.hasOwnProperty.call(cost,"dateMode"))cost.dateMode=cost.date?"manual":"auto";
+          });
+        }
+        if(!base.stages.some(stage=>stage.name==="Shipping and arrival")) {
+          base.stages.push({name:"Shipping and arrival",date:"",detail:"Date to confirm with the shipper.",status:"Waiting"});
+        }
+        return base;
+      };
+      let fleet, carId, currentCar, data;
+      try {
+        fleet=ImportTrackerStore.loadFleet();
+        carId=new URLSearchParams(location.search).get("id");
+        currentCar=fleet.cars.find(car=>car.id===carId) || (!carId&&fleet.cars.length===1?fleet.cars[0]:null);
+        if(!currentCar){location.replace("index.html");return;}
+        data=mergeData(currentCar.data);
+      } catch(error) {
+        console.error("Could not load car data:",error);
+        alert(error.message);
+        location.replace("index.html");
+        return;
+      }
+      const $ = id => document.getElementById(id);
+      const money = value => new Intl.NumberFormat("en-IE",{style:"currency",currency:"EUR",maximumFractionDigits:2}).format(Number.isFinite(value)?value:0);
+      const yen = value => `¥${new Intl.NumberFormat("en-IE",{maximumFractionDigits:0}).format(Number.isFinite(value)?value:0)}`;
+      const rate = () => number(data.invoice.rate);
+      const moneyPair = value => `<span>${money(value)}</span><small class="jpy-equivalent">≈ ${yen(value*rate())}</small>`;
+      const number = value => Number(value) || 0;
+      const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+      const save = () => { try { ImportTrackerStore.saveCar(carId,data); } catch(error) { console.error("Could not save car data:",error); alert(error.message); } };
+      const customs = (dutyRate=data.invoice.dutyRate) => {
+        const i=data.invoice, rate=number(i.rate);
+        const cif=rate>0?(number(i.fob)+number(i.freight)+number(i.insurance)+number(i.other))/rate:0;
+        const duty=cif*number(dutyRate), vat=i.vatEnabled?((cif+duty)*0.23):0;
+        return {cif,duty,vat,port:duty+vat,subtotal:cif+duty+vat};
+      };
+      const fees = () => data.costs.reduce((sum,c)=>sum+Math.max(number(c.estimate),number(c.actual)),0);
+      const invoiceTotalJpy = () => number(data.invoice.fob)+number(data.invoice.freight)+number(data.invoice.other)+number(data.invoice.insurance);
+      const invoicePaidJpy = () => Math.min(number(data.invoice.paidJpy),invoiceTotalJpy());
+      const paid = () => invoicePaidJpy()/Math.max(rate(),0.000001)
+        + data.costs.reduce((sum,c)=>sum+(c.status==="paid"?number(c.actual):0),0)
+        + Object.values(data.charges).reduce((sum,c)=>sum+(c.status==="paid"?number(c.actual):0),0);
+      const allIn = (scenarioDuty, vrt) => customs(scenarioDuty).subtotal+fees()+number(vrt);
+      const statusBadge = status => `<span class="status ${esc(status)}">${esc(status)}</span>`;
+      const timelineStatusOptions = status => ["estimated","quoted","charged","paid"].map(option=>`<option value="${option}" ${status===option?"selected":""}>${option}</option>`).join("");
+      const waitingForCharge = (estimate, actual, status) => status==="paid" ? 0 : (number(actual)>0 ? number(actual) : number(estimate));
+      const displayDate = value => value ? new Intl.DateTimeFormat("en-IE",{day:"numeric",month:"short",year:"numeric"}).format(new Date(`${value}T00:00:00`)) : "Date to confirm";
+      const arrivalDate = () => data.stages.find(stage=>stage.name==="Shipping and arrival")?.date||"";
+      const costTiming = cost => {
+        if(cost.dateMode==="manual")return cost.date?"Manual date":"Date to confirm";
+        const offset=ImportTrackerStore.costDateOffset(cost.category);
+        if(offset!==null&&!arrivalDate())return "Waiting for arrival date";
+        return offset===0?"On expected arrival (estimate)":offset===31?"Day 31 after arrival (estimate)":"Set date manually";
+      };
+      const syncArrivalDates = () => ImportTrackerStore.syncArrivalDates(data);
+      function renderCostTimeline() {
+        syncArrivalDates();
+        const arrival=arrivalDate();
+        $("arrivalScheduleNote").innerHTML=arrival
+          ?`Expected arrival: <strong>${displayDate(arrival)}</strong>. Duty, VAT, clearance and port handling are dated on arrival; VRT by day 30; NCT, plates, insurance and motor tax on day 31 as a planning estimate. Confirm the VRT deadline and registration sequence. <a href="vehicle.html?id=${encodeURIComponent(carId)}">Edit arrival date</a>.`
+          :`Set an expected arrival date in <a href="vehicle.html?id=${encodeURIComponent(carId)}">Edit car</a> to date customs and port costs on arrival, VRT by day 30, and registration costs after that. These are planning estimates; confirm the actual sequence.`;
+        const chargeRows = [
+          ["duty","Customs duty",data.charges.duty.dateMode==="manual"?"Manual date":arrival?`On arrival · ${displayDate(arrival)}`:"On arrival"],
+          ["vat","Import VAT",data.charges.vat.dateMode==="manual"?"Manual date":arrival?`On arrival · ${displayDate(arrival)}`:"On arrival"],
+          ["vrt","VRT",data.charges.vrt.dateMode==="manual"?"Manual date":arrival?`By ${displayDate(data.charges.vrt.date)} · within 30 days`:"Within 30 days of arrival"]
+        ].map(([key,name,timing])=>`<tr>
+          <td>${name}</td><td>${timing}</td><td><span data-charge-estimate="${key}"></span></td>
+          <td><input aria-label="${name} charged amount in euros" data-charge-actual="${key}" type="number" min="0" step=".01"><small class="jpy-equivalent" data-charge-jpy="${key}"></small></td>
+          <td><span data-charge-waiting="${key}"></span></td>
+          <td><select aria-label="${name} status" data-charge-status="${key}">${timelineStatusOptions(data.charges[key].status)}</select></td>
+          <td><input aria-label="${name} due or charged date" title="${data.charges[key].dateMode==="manual"?"Manual date; clear to restore automatic timing":"Auto-filled from expected arrival; edit to override"}" data-charge-date="${key}" type="date"></td>
+        </tr>`).join("");
+        const invoiceRow=`<tr>
+          <td>Invoice payments</td><td>Balance due per invoice</td><td><span data-invoice-estimate></span></td>
+          <td><span data-invoice-charged></span></td><td><span data-invoice-waiting></span></td>
+          <td><span data-invoice-status></span></td><td><input id="invoiceDueDate" aria-label="Invoice balance due date" type="date" value="${esc(data.invoice.dueDate)}"></td>
+        </tr>`;
+        const feeRows=data.costs.map((cost,index)=>`<tr>
+          <td>${esc(cost.category)}</td><td data-fee-timing="${index}"></td>
+          <td><span data-fee-estimate="${index}"></span></td><td><span data-fee-charged="${index}"></span></td>
+          <td><span data-fee-waiting="${index}"></span></td><td><span data-fee-status="${index}"></span></td>
+          <td data-fee-date="${index}"></td>
+        </tr>`).join("");
+        $("costTimelineRows").innerHTML=invoiceRow+chargeRows+feeRows;
+        updateCostTimeline();
+      }
+      function updateCostTimeline() {
+        const rateValue=Math.max(rate(),0.000001);
+        const totalJpy=invoiceTotalJpy(), paidJpy=invoicePaidJpy(), balanceJpy=Math.max(totalJpy-paidJpy,0);
+        const invoiceEstimate=totalJpy/rateValue, invoiceCharged=paidJpy/rateValue, invoiceWaiting=balanceJpy/rateValue;
+        document.querySelector("[data-invoice-estimate]").innerHTML=moneyPair(invoiceEstimate);
+        document.querySelector("[data-invoice-charged]").innerHTML=moneyPair(invoiceCharged);
+        document.querySelector("[data-invoice-waiting]").innerHTML=moneyPair(invoiceWaiting);
+        const invoiceStatus=balanceJpy===0?"paid":paidJpy===0?"due":"part-paid";
+        document.querySelector("[data-invoice-status]").innerHTML=statusBadge(invoiceStatus);
+        $("invoiceDueDate").value=data.invoice.dueDate||"";
+        const customEstimates={duty:customs().duty,vat:customs().vat,vrt:number(data.vrt.high)};
+        for(const key of ["duty","vat","vrt"]) {
+          const record=data.charges[key], estimate=customEstimates[key], waiting=waitingForCharge(estimate,record.actual,record.status);
+          const estimateHtml=key==="vrt"?`${moneyPair(number(data.vrt.low))}–${moneyPair(number(data.vrt.high))}`:moneyPair(estimate);
+          document.querySelector(`[data-charge-estimate="${key}"]`).innerHTML=estimateHtml;
+          document.querySelector(`[data-charge-actual="${key}"]`).value=number(record.actual)||"";
+          document.querySelector(`[data-charge-jpy="${key}"]`).textContent=`≈ ${yen(number(record.actual)*rate())}`;
+          document.querySelector(`[data-charge-waiting="${key}"]`).innerHTML=key==="vrt"&&record.status!=="paid"&&number(record.actual)===0
+            ?`${moneyPair(number(data.vrt.low))}–${moneyPair(number(data.vrt.high))}`:moneyPair(waiting);
+          document.querySelector(`[data-charge-status="${key}"]`).value=record.status;
+          document.querySelector(`[data-charge-date="${key}"]`).value=record.date||"";
+        }
+        data.costs.forEach((cost,index)=>{
+          const estimate=number(cost.estimate), actual=number(cost.actual), waiting=cost.status==="paid"?0:Math.max(estimate,actual);
+          document.querySelector(`[data-fee-timing="${index}"]`).textContent=costTiming(cost);
+          document.querySelector(`[data-fee-estimate="${index}"]`).innerHTML=moneyPair(estimate);
+          document.querySelector(`[data-fee-charged="${index}"]`).innerHTML=moneyPair(actual);
+          document.querySelector(`[data-fee-waiting="${index}"]`).innerHTML=moneyPair(waiting);
+          document.querySelector(`[data-fee-status="${index}"]`).innerHTML=statusBadge(cost.status);
+          document.querySelector(`[data-fee-date="${index}"]`).textContent=cost.date?`${displayDate(cost.date)}${cost.dateMode==="auto"?" · estimate":""}`:"Date to confirm";
+        });
+      }
+      function renderCostBreakdown() {
+        const c=customs();
+        const parts=[
+          {key:"cif",label:"CIF",low:c.cif,high:c.cif},
+          {key:"duty",label:"Duty",low:c.duty,high:c.duty},
+          {key:"vat",label:"VAT",low:c.vat,high:c.vat},
+          {key:"vrt",label:"VRT",low:number(data.vrt.low),high:number(data.vrt.high)},
+          {key:"fees",label:"Other fees",low:fees(),high:fees()}
+        ];
+        const total=parts.reduce((sum,part)=>sum+Math.max(part.high,0),0);
+        const bar=parts.map(part=>`<span class="stacked-segment ${part.key}" style="width:${total?Math.max(part.high/total*100,0):0}%" title="${part.label}: ${money(part.low)}${part.low!==part.high?`–${money(part.high)}`:""}"></span>`).join("");
+        const legend=parts.map(part=>`<div class="legend-item"><span class="legend-name"><i class="swatch ${part.key}"></i>${part.label}</span><strong>${moneyPair(part.low)}${part.low!==part.high?`–${moneyPair(part.high)}`:""}</strong></div>`).join("");
+        $("costBreakdownChart").innerHTML=`<div class="stacked-bar" role="img" aria-label="Estimated cost breakdown">${bar}</div><div class="chart-legend">${legend}</div><div class="hint" style="margin-top:12px">Total estimate: ${moneyPair(allIn(number(data.invoice.dutyRate),data.vrt.low))}–${moneyPair(allIn(number(data.invoice.dutyRate),data.vrt.high))}</div>`;
+      }
+      function timelineStages() {
+        const c=customs(),rateValue=Math.max(rate(),0.000001);
+        const pending=(key,estimate)=>data.charges[key].status==="paid"?0:data.charges[key].status==="charged"&&number(data.charges[key].actual)>0?number(data.charges[key].actual):estimate;
+        const duty=pending("duty",c.duty),vat=pending("vat",c.vat);
+        const vrtLow=data.charges.vrt.status==="paid"?0:data.charges.vrt.status==="charged"&&number(data.charges.vrt.actual)>0?number(data.charges.vrt.actual):number(data.vrt.low);
+        const vrtHigh=data.charges.vrt.status==="paid"?0:data.charges.vrt.status==="charged"&&number(data.charges.vrt.actual)>0?number(data.charges.vrt.actual):number(data.vrt.high);
+        const feeTotal=data.costs.reduce((sum,cost)=>sum+(cost.status==="paid"?0:cost.status==="charged"&&number(cost.actual)>0?number(cost.actual):Math.max(number(cost.estimate),number(cost.actual))),0);
+        const invoiceBalance=Math.max(invoiceTotalJpy()-invoicePaidJpy(),0)/rateValue;
+        const arrival=data.stages.find(stage=>stage.name==="Shipping and arrival")?.date;
+        const vrtDate=data.charges.vrt.date||data.stages.find(stage=>stage.name==="Register and pay VRT")?.date;
+        const feeDates=data.costs.map(cost=>cost.date).filter(Boolean).sort();
+        return [
+          {label:"Invoice",when:displayDate(data.invoice.dueDate),low:invoiceBalance,high:invoiceBalance},
+          {label:"At port",when:data.charges.duty.date?displayDate(data.charges.duty.date):arrival?`Arrival ${displayDate(arrival)}`:"On arrival",low:duty+vat,high:duty+vat},
+          {label:"VRT",when:vrtDate?displayDate(vrtDate):"Within 30 days",low:vrtLow,high:vrtHigh},
+          {label:"Other fees",when:feeDates.length?displayDate(feeDates[0]):"As arranged",low:feeTotal,high:feeTotal}
+        ];
+      }
+      function renderSpendTimeline() {
+        const stages=timelineStages(),xs=[115,335,555,775],bottom=168,top=30,chartHeight=bottom-top;
+        let lowCumulative=0,highCumulative=0;
+        const points=stages.map((stage,index)=>{
+          lowCumulative+=stage.low;highCumulative+=stage.high;
+          return {...stage,x:xs[index],low:lowCumulative,high:highCumulative};
+        });
+        const maxValue=Math.max(points[points.length-1].high,1),y=value=>bottom-(value/maxValue)*chartHeight;
+        const highCoords=points.map(point=>`${point.x},${y(point.high)}`);
+        const lowCoords=points.map(point=>`${point.x},${y(point.low)}`);
+        const band=`M${highCoords.join(" L")} L${lowCoords.slice().reverse().join(" L")} Z`;
+        const grid=[0,.5,1].map(fraction=>{
+          const value=maxValue*fraction,position=y(value);
+          return `<line class="chart-gridline" x1="72" y1="${position}" x2="840" y2="${position}"></line><text class="chart-axis-label" x="64" y="${position+4}" text-anchor="end">${money(value)}</text>`;
+        }).join("");
+        const labels=points.map(point=>`<text class="chart-stage-label" x="${point.x}" y="197" text-anchor="middle">${point.label}</text><text class="chart-date-label" x="${point.x}" y="215" text-anchor="middle">${esc(point.when)}</text><circle class="chart-point" cx="${point.x}" cy="${y(point.high)}" r="5"></circle>`).join("");
+        $("spendTimelineChart").innerHTML=`<svg class="timeline-chart" viewBox="0 0 900 230" role="img" aria-label="Cumulative estimated spend by import stage. Final estimate ${money(points.at(-1).low)} to ${money(points.at(-1).high)}">
+          ${grid}<path class="chart-band" d="${band}"></path><path class="chart-high-line" d="M${highCoords.join(" L")}"></path><path class="chart-low-line" d="M${lowCoords.join(" L")}"></path>${labels}
+        </svg>`;
+        $("timelineChartNote").innerHTML=`Expected future spend by stage: ${moneyPair(points.at(-1).low)}–${moneyPair(points.at(-1).high)}. Solid line is the high estimate; dashed line is the low estimate.`;
+      }
+      function updateSummary() {
+        const c=customs(), a=customs(0.1), b=customs(0), feeTotal=fees();
+        $("scenarioA").innerHTML=`10% duty scenario: ${moneyPair(a.port)} payable at port · ${moneyPair(a.subtotal)} before VRT and fees`;
+        $("scenarioB").innerHTML=`0% duty scenario: ${moneyPair(b.port)} payable at port · ${moneyPair(b.subtotal)} before VRT and fees`;
+        $("invoiceEuro").innerHTML=`CIF customs value: <strong>${moneyPair(c.cif)}</strong> · invoice total ${yen(number(data.invoice.fob)+number(data.invoice.freight)+number(data.invoice.other)+number(data.invoice.insurance))} at the working rate.`;
+        const low=allIn(number(data.invoice.dutyRate),data.vrt.low), high=allIn(number(data.invoice.dutyRate),data.vrt.high), recorded=paid();
+        $("totalLow").innerHTML=moneyPair(low); $("totalHigh").innerHTML=moneyPair(high);
+        $("paidTotal").innerHTML=moneyPair(recorded); $("remainingTotal").innerHTML=moneyPair(Math.max(0,high-recorded));
+        const invoiceBalance=Math.max(invoiceTotalJpy()-invoicePaidJpy(),0)/Math.max(rate(),0.000001);
+        const chargedUnpaid=data.costs.reduce((sum,c)=>sum+(c.status==="charged"?number(c.actual):0),0)
+          +Object.values(data.charges).reduce((sum,c)=>sum+(c.status==="charged"?number(c.actual):0),0);
+        const due=invoiceBalance+chargedUnpaid;
+        const futureLow=Math.max(0,low-recorded-due), futureHigh=Math.max(0,high-recorded-due);
+        $("timelinePaid").innerHTML=moneyPair(recorded);
+        $("timelineDue").innerHTML=moneyPair(due);
+        $("timelineFuture").innerHTML=`${moneyPair(futureLow)}–${moneyPair(futureHigh)}`;
+        $("timelineOutstanding").innerHTML=moneyPair(Math.max(0,high-recorded));
+        if(invoiceBalance>0) {
+          $("nextPaymentTitle").textContent=`Next action · Pay ${yen(invoiceTotalJpy()-invoicePaidJpy())} invoice balance`;
+          $("nextPaymentDetail").textContent=`Due ${displayDate(data.invoice.dueDate)} at 14:11 · invoice time zone not stated`;
+        } else {
+          $("nextPaymentTitle").textContent="Next action · Confirm customs and VRT amounts";
+          $("nextPaymentDetail").textContent="Customs and VRT charges are estimates until confirmed.";
+        }
+        const estimate=number(data.vrt.omsp)*(number(data.vrt.band)/100)+Math.min(600,number(data.vrt.nox));
+        $("vrtEstimate").innerHTML=`Formula helper: ${moneyPair(estimate)} (OMSP × CO₂ band rate + NOx, capped at €600). Placeholder range: ${moneyPair(number(data.vrt.low))}–${moneyPair(number(data.vrt.high))}.`;
+        $("emissionsWarning").classList.toggle("hidden",number(data.vrt.co2)>0 && number(data.vrt.band)>0);
+        $("calculationBreakdown").innerHTML=
+          `<p>CIF: <strong>${moneyPair(c.cif)}</strong></p><p>Duty (${(number(data.invoice.dutyRate)*100).toFixed(0)}%): <strong>${moneyPair(c.duty)}</strong></p><p>Import VAT (${data.invoice.vatEnabled?"23%":"off"}): <strong>${moneyPair(c.vat)}</strong></p><p>Payable at port: <strong>${moneyPair(c.port)}</strong></p><p>Other cost estimates: <strong>${moneyPair(feeTotal)}</strong></p><p>Selected VRT range: <strong>${moneyPair(data.vrt.low)}–${moneyPair(data.vrt.high)}</strong></p><p>All-in low/high: <strong>${moneyPair(low)}–${moneyPair(high)}</strong></p>`;
+        document.querySelectorAll("[data-invoice-eur]").forEach(el=>{
+          const yenAmount=number(data.invoice[el.dataset.invoiceEur]);
+          el.textContent=rate()>0?`≈ ${money(yenAmount/rate())} at the working rate`:"EUR conversion unavailable";
+        });
+        document.querySelectorAll("[data-vrt-jpy]").forEach(el=>{
+          const amount=number(data.vrt[el.dataset.vrtJpy]);
+          el.textContent=rate()>0?`≈ ${yen(amount*rate())} at the working rate`:"JPY conversion unavailable";
+        });
+        document.querySelectorAll("[data-cost-jpy]").forEach(el=>{
+          const [index,key]=el.dataset.costJpy.split(":");
+          el.textContent=rate()>0?`≈ ${yen(number(data.costs[Number(index)]?.[key])*rate())}`:"JPY conversion unavailable";
+        });
+        updateCostTimeline();
+        renderCostBreakdown();
+        renderSpendTimeline();
+      }
+      const invoiceFields=["fob","freight","other","insurance","rate","paidJpy","dutyRate","vatEnabled"];
+      function renderInvoice() {
+        for(const key of invoiceFields) $(key).value=String(data.invoice[key]);
+        for(const key of ["omsp","co2","band","nox","low","high"]) $(key==="band"?"vrtBand":key==="low"?"vrtLow":key==="high"?"vrtHigh":key).value=String(data.vrt[key]);
+      }
+      function renderCosts() {
+        $("costRows").innerHTML=data.costs.map((c,index)=>`<tr>
+          <td><input aria-label="Cost category" data-cost="${index}" data-key="category" value="${esc(c.category)}"></td>
+          <td><input aria-label="Estimated euros" data-cost="${index}" data-key="estimate" type="number" min="0" step=".01" value="${number(c.estimate)}"><small class="jpy-equivalent" data-cost-jpy="${index}:estimate"></small></td>
+          <td><input aria-label="Actual euros" data-cost="${index}" data-key="actual" type="number" min="0" step=".01" value="${number(c.actual)}"><small class="jpy-equivalent" data-cost-jpy="${index}:actual"></small></td>
+          <td><select aria-label="Cost status" data-cost="${index}" data-key="status">${["estimated","quoted","charged","paid"].map(s=>`<option ${c.status===s?"selected":""}>${s}</option>`).join("")}</select></td>
+          <td><input aria-label="Cost date" title="${c.dateMode==="manual"?"Manual date; clear to restore automatic timing":"Auto-filled when expected arrival is known; edit to override"}" data-cost="${index}" data-key="date" type="date" value="${esc(c.date)}"></td>
+          <td><input aria-label="Notes or receipt URL" data-cost="${index}" data-key="notes" value="${esc(c.notes)}" placeholder="Notes"><input aria-label="Receipt link" data-cost="${index}" data-key="receipt" value="${esc(c.receipt)}" placeholder="Receipt URL" style="margin-top:5px"></td>
+          <td><button class="row-remove" type="button" data-remove="${index}" aria-label="Remove cost line">×</button></td></tr>`).join("");
+      }
+      function renderDocuments() {
+        $("documentRows").innerHTML=data.documents.map((d,i)=>`<div class="check-row">
+          <input type="checkbox" aria-label="Mark document as have" data-doc-have="${i}" ${d.status==="Have"?"checked":""}>
+          <div><strong>${esc(d.name)}</strong><input aria-label="Document notes" data-doc="${i}" data-key="notes" value="${esc(d.notes)}" placeholder="Notes" style="margin-top:6px"><input aria-label="Document link" data-doc="${i}" data-key="link" value="${esc(d.link)}" placeholder="Optional link" style="margin-top:5px"></div>
+          <select aria-label="Document status" data-doc="${i}" data-key="status">${["Have","Need","Waiting"].map(s=>`<option ${d.status===s?"selected":""}>${s}</option>`).join("")}</select></div>`).join("");
+        const have=data.documents.filter(d=>d.status==="Have").length;
+        $("docProgress").textContent=`${have} / ${data.documents.length} have`;
+      }
+      function renderStages() {
+        $("timelineRows").innerHTML=data.stages.map((s,i)=>`<div class="stage ${s.status==="Done"?"done":s.status==="Current"?"current":""}">
+          <span class="stage-marker" aria-hidden="true"></span><div><strong>${esc(s.name)}</strong><div class="hint">${esc(s.detail)}</div></div>
+          <div><input aria-label="Stage due date" data-stage="${i}" data-key="date" type="date" value="${esc(s.date)}"><select aria-label="Stage status" data-stage="${i}" data-key="status" style="margin-top:5px">${["Waiting","Current","Done"].map(x=>`<option ${s.status===x?"selected":""}>${x}</option>`).join("")}</select></div></div>`).join("");
+      }
+      function updateCarHeading() {
+        const model=data.vehicle.find(field=>field.label==="Model")?.value.trim().split(",")[0].trim();
+        const plate=data.vehicle.find(field=>field.label==="Singapore plate")?.value.trim();
+        $("carPageTitle").textContent=model||"New car";
+        $("carPageSubtitle").textContent=plate?`${plate} · Import tracker · Saved in this browser`:"Add the vehicle details and import records";
+        document.title=`${model||"Car"} · Import Tracker`;
+      }
+      function rerender() { save(); updateSummary(); }
+      $("editVehicle").href=`vehicle.html?id=${encodeURIComponent(carId)}`;
+      syncArrivalDates(); save();
+      renderInvoice(); renderCosts(); renderCostTimeline(); renderDocuments(); renderStages(); updateCarHeading(); updateSummary();
+      document.querySelectorAll("#fob, #freight, #other, #insurance, #rate, #paidJpy, #dutyRate, #vatEnabled, #omsp, #co2, #vrtBand, #nox, #vrtLow, #vrtHigh").forEach(control=>control.addEventListener("input",()=>{
+        const id=control.id;
+        if(invoiceFields.includes(id)) data.invoice[id]=id==="dutyRate"?number(control.value):id==="vatEnabled"?control.value==="true":number(control.value);
+        const vrtMap={omsp:"omsp",co2:"co2",vrtBand:"band",nox:"nox",vrtLow:"low",vrtHigh:"high"};
+        if(vrtMap[id]) data.vrt[vrtMap[id]]=number(control.value);
+        rerender();
+      }));
+      const updateCost = event => {
+        const el=event.target, i=Number(el.dataset.cost), key=el.dataset.key;
+        if(!Number.isInteger(i)||!key)return;
+        data.costs[i][key]=["estimate","actual"].includes(key)?number(el.value):el.value;
+        if(key==="date") {
+          data.costs[i].dateMode=el.value?"manual":"auto";
+          syncArrivalDates();
+          if(!el.value)renderCosts();
+        } else if(key==="category"&&event.type==="change") {
+          syncArrivalDates();
+          renderCosts();
+          renderCostTimeline();
+        }
+        rerender();
+      };
+      $("costRows").addEventListener("input",updateCost);
+      $("costRows").addEventListener("change",updateCost);
+      $("costRows").addEventListener("click",event=>{
+        const i=event.target.dataset.remove;
+        if(i!==undefined){data.costs.splice(Number(i),1);renderCosts();renderCostTimeline();rerender();}
+      });
+      $("addCost").addEventListener("click",()=>{data.costs.push({category:"New cost",estimate:0,actual:0,status:"estimated",date:"",dateMode:"auto",notes:"",receipt:""});renderCosts();renderCostTimeline();rerender();});
+      const updateChargeTimeline = event => {
+        const el=event.target;
+        if(el.id==="invoiceDueDate") data.invoice.dueDate=el.value;
+        if(el.dataset.chargeActual) data.charges[el.dataset.chargeActual].actual=number(el.value);
+        if(el.dataset.chargeStatus) data.charges[el.dataset.chargeStatus].status=el.value;
+        if(el.dataset.chargeDate) {
+          const record=data.charges[el.dataset.chargeDate];
+          record.date=el.value;
+          record.dateMode=el.value?"manual":"auto";
+          syncArrivalDates();
+        }
+        rerender();
+      };
+      $("costTimelineRows").addEventListener("input",updateChargeTimeline);
+      $("costTimelineRows").addEventListener("change",updateChargeTimeline);
+      $("documentRows").addEventListener("input",event=>{
+        const el=event.target, i=Number(el.dataset.doc), key=el.dataset.key;
+        if(Number.isInteger(i)&&key) data.documents[i][key]=el.value;
+        if(el.dataset.docHave!==undefined){data.documents[Number(el.dataset.docHave)].status=el.checked?"Have":"Need";renderDocuments();}
+        rerender();
+      });
+      $("documentRows").addEventListener("change",event=>{
+        const el=event.target, i=Number(el.dataset.doc), key=el.dataset.key;
+        if(Number.isInteger(i)&&key) data.documents[i][key]=el.value;
+        if(el.dataset.docHave!==undefined) data.documents[Number(el.dataset.docHave)].status=el.checked?"Have":"Need";
+        renderDocuments(); rerender();
+      });
+      $("timelineRows").addEventListener("input",event=>{
+        const el=event.target, i=Number(el.dataset.stage), key=el.dataset.key;
+        if(Number.isInteger(i)&&key) {
+          data.stages[i][key]=el.value;
+          if(key==="date"&&data.stages[i].name==="Shipping and arrival") {
+            syncArrivalDates();
+            renderCosts();
+            renderCostTimeline();
+          }
+        }
+        rerender();
+      });
+      $("timelineRows").addEventListener("change",event=>{
+        const el=event.target, i=Number(el.dataset.stage), key=el.dataset.key;
+        if(Number.isInteger(i)&&key) {
+          data.stages[i][key]=el.value;
+          if(key==="date"&&data.stages[i].name==="Shipping and arrival") {
+            syncArrivalDates();
+            renderCosts();
+            renderCostTimeline();
+          }
+        }
+        renderStages(); rerender();
+      });
+      $("themeToggle").addEventListener("click",()=>{
+        const dark=document.documentElement.dataset.theme!=="dark";
+        document.documentElement.dataset.theme=dark?"dark":"light";
+        $("themeToggle").textContent=dark?"☀️ Light mode":"🌙 Dark mode";
+        localStorage.setItem("mazda3-import-theme",dark?"dark":"light");
+      });
+      const savedTheme=localStorage.getItem("mazda3-import-theme");
+      if(savedTheme==="dark"){document.documentElement.dataset.theme="dark";$("themeToggle").textContent="☀️ Light mode";}
+      $("exportJson").addEventListener("click",()=>{
+        const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+        download(blob,"car-import-tracker.json");
+      });
+      $("importButton").addEventListener("click",()=>$("importFile").click());
+      $("importFile").addEventListener("change",async event=>{
+        const file=event.target.files?.[0]; if(!file)return;
+        try {
+          const parsed=JSON.parse(await file.text());
+          const imported=mergeData(parsed);
+          if(!confirm("Replace the tracker data in this browser with the imported file?")) return;
+          data=imported; syncArrivalDates(); renderInvoice();renderCosts();renderCostTimeline();renderDocuments();renderStages();updateCarHeading();rerender();
+        } catch(error) { alert(`Import failed: ${error.message}`); }
+        finally { event.target.value=""; }
+      });
+      $("exportCsv").addEventListener("click",()=>{
+        const quote=value=>`"${String(value??"").replace(/"/g,'""')}"`;
+        const rows=[["Category","Estimate EUR","Actual EUR","Status","Date","Notes","Receipt URL"],...data.costs.map(c=>[c.category,c.estimate,c.actual,c.status,c.date,c.notes,c.receipt])];
+        download(new Blob([rows.map(row=>row.map(quote).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"}),"car-import-costs.csv");
+      });
+      function download(blob,name) {
+        const url=URL.createObjectURL(blob), a=document.createElement("a");
+        a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+      }
+    })();
+  </script>
+</body>
+</html>

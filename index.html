@@ -3,392 +3,364 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f7fa">
-  <title>Mazda 3 Import Tracker</title>
+  <meta name="theme-color" content="#f7faf9">
+  <title>Import Tracker · Focus</title>
   <style>
     :root {
-      color-scheme: light;
-      --bg: #f5f7fa; --panel: #fff; --text: #17212b; --muted: #647383;
-      --line: #dce3e9; --accent: #145c88; --accent-soft: #e6f2f8;
-      --green: #18764b; --green-soft: #e6f5ed; --amber: #8b5b00;
-      --amber-soft: #fff3d8; --red: #a53d35; --red-soft: #fce9e7;
-      --shadow: 0 5px 20px #142b3a0c;
+      color-scheme:light; --bg:#f5f7fa; --panel:#fff; --text:#17212b; --muted:#647383;
+      --line:#dce3e9; --accent:#145c88; --accent-soft:#e6f2f8; --green:#18764b;
+      --green-soft:#e6f5ed; --amber:#8b5b00; --amber-soft:#fff3d8; --red:#a53d35;
+      --shadow:0 5px 20px #142b3a0c;
     }
     [data-theme="dark"] {
-      color-scheme: dark; --bg: #111820; --panel: #1b2630; --text: #e8eef3;
-      --muted: #a5b2bd; --line: #34434f; --accent: #83c8ed; --accent-soft: #203b4b;
-      --green: #8fdbb1; --green-soft: #203b30; --amber: #f0c36d;
-      --amber-soft: #45371d; --red: #ff9a8f; --red-soft: #482725;
-      --shadow: 0 5px 20px #0003;
+      color-scheme:dark; --bg:#111820; --panel:#1b2630; --text:#e8eef3; --muted:#a5b2bd;
+      --line:#34434f; --accent:#83c8ed; --accent-soft:#203b4b; --green:#8fdbb1;
+      --green-soft:#203b30; --amber:#f0c36d; --amber-soft:#45371d; --red:#ff9a8f;
+      --shadow:0 5px 20px #0003;
     }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-    button, input, select, textarea { font: inherit; }
-    button, .button { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 9px; padding: 9px 13px; cursor: pointer; }
-    button:hover, .button:hover { border-color: var(--accent); }
-    input, select, textarea { min-width: 0; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 7px; padding: 8px 9px; width: 100%; }
-    input[type="checkbox"] { width: auto; accent-color: var(--accent); }
-    label { color: var(--muted); font-size: 12px; font-weight: 650; display: block; margin-bottom: 5px; }
-    .shell { max-width: 1160px; margin: auto; padding: 24px; }
-    header { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin-bottom:22px; }
-    h1 { font-size: clamp(24px, 4vw, 34px); letter-spacing:-.03em; margin:0; }
-    h2 { font-size:20px; margin:0; letter-spacing:-.02em; }
-    h3 { font-size:15px; margin:0 0 12px; }
-    p { margin:8px 0; }
-    .subtle, .hint { color:var(--muted); font-size:13px; }
-    .head-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
-    nav { display:flex; gap:8px; overflow-x:auto; padding:0 0 14px; border-bottom:1px solid var(--line); margin-bottom:18px; }
-    nav a { white-space:nowrap; text-decoration:none; color:var(--muted); padding:7px 12px; border-radius:999px; font-weight:650; }
-    nav a:hover { background:var(--accent-soft); color:var(--accent); }
-    .next { border:1px solid #e6c980; background:var(--amber-soft); color:var(--text); padding:16px 18px; border-radius:13px; display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px; box-shadow:var(--shadow); }
-    .next strong { display:block; font-size:16px; }
-    .grid { display:grid; gap:14px; }
-    .cards { grid-template-columns:repeat(4, minmax(0,1fr)); margin-bottom:18px; }
-    .two { grid-template-columns:repeat(2,minmax(0,1fr)); }
-    .panel, .metric { background:var(--panel); border:1px solid var(--line); border-radius:13px; box-shadow:var(--shadow); }
-    .panel { padding:18px; margin-bottom:16px; }
-    .metric { padding:15px 17px; }
-    .metric .value { font-size:22px; font-weight:750; letter-spacing:-.03em; display:block; margin-top:4px; }
-    .metric .caption { color:var(--muted); font-size:12px; }
-    .jpy-equivalent, .eur-equivalent { display:block; color:var(--muted); font-size:10px; font-weight:400; line-height:1.25; letter-spacing:0; margin-top:2px; }
-    .section-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
-    .fields { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
-    .field { min-width:0; }
-    .field.wide { grid-column:span 2; }
-    .field.full { grid-column:1/-1; }
-    .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    button,a { font:inherit; }
+    button,.button { display:inline-flex; justify-content:center; align-items:center; gap:7px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:9px; padding:9px 13px; cursor:pointer; text-decoration:none; }
+    button:hover,.button:hover { border-color:var(--accent); }
     .primary { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
     [data-theme="dark"] .primary { color:#10202a; }
-    .status { display:inline-block; padding:3px 9px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-weight:700; font-size:12px; }
-    .status.have, .status.paid { background:var(--green-soft); color:var(--green); }
-    .status.need, .status.estimated { background:var(--amber-soft); color:var(--amber); }
-    .status.waiting, .status.quoted { background:var(--accent-soft); color:var(--accent); }
-    .warning { background:var(--amber-soft); border-left:4px solid #d5a333; padding:11px 13px; border-radius:7px; margin:12px 0; }
-    .danger { background:var(--red-soft); border-left:4px solid var(--red); padding:11px 13px; border-radius:7px; margin:12px 0; }
-    .table-wrap { overflow-x:auto; }
-    table { border-collapse:collapse; width:100%; min-width:760px; }
-    th, td { padding:9px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle; }
-    th { color:var(--muted); font-size:12px; }
-    td input, td select { min-width:90px; }
-    td:first-child input { min-width:130px; }
-    .row-remove { padding:5px 8px; color:var(--red); }
-    .check-row, .stage { display:grid; grid-template-columns:auto 1fr minmax(125px,170px); align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
-    .check-row:last-child, .stage:last-child { border-bottom:0; }
-    .check-row strong, .stage strong { display:block; }
-    .check-row .hint, .stage .hint { margin:1px 0 0; }
-    .stage-marker { width:12px; height:12px; border:2px solid var(--line); border-radius:50%; }
-    .stage.done .stage-marker { background:var(--green); border-color:var(--green); }
-    .stage.current .stage-marker { background:var(--accent); border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
-    .document-list { margin-top:8px; }
-    .footer { color:var(--muted); font-size:12px; text-align:center; padding:12px 0 25px; }
+    .shell { max-width:1100px; margin:auto; padding:24px; }
+    header { display:flex; justify-content:space-between; align-items:center; gap:18px; margin-bottom:22px; }
+    h1 { font-size:clamp(25px,4vw,36px); letter-spacing:-.035em; margin:0; }
+    h2 { font-size:20px; letter-spacing:-.02em; margin:0; }
+    h3 { font-size:16px; margin:0; }
+    .subtle,.hint { color:var(--muted); font-size:13px; }
+    .head-actions,.actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .panel,.car-card { background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
+    .panel { padding:18px; margin:18px 0; }
+    .section-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+    .car-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .car-card { padding:18px; min-width:0; }
+    .car-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+    .car-name { font-size:20px; line-height:1.25; margin:0; }
+    .plate { font-size:12px; color:var(--muted); margin-top:5px; }
+    .car-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:18px 0; }
+    .metric { min-width:0; }
+    .metric-label { display:block; font-size:11px; color:var(--muted); }
+    .metric-value { display:block; font-weight:750; font-size:16px; margin-top:2px; }
+    .small { display:block; color:var(--muted); font-size:10px; font-weight:400; line-height:1.25; }
+    .next-action { border-radius:9px; background:var(--amber-soft); padding:11px 12px; margin:12px 0; min-height:68px; }
+    .next-action strong { display:block; font-size:13px; }
+    .next-action .hint { margin-top:2px; }
+    .car-actions { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; }
+    .remove { color:var(--red); }
+    .empty { text-align:center; padding:44px 20px; }
+    .empty h2 { margin-bottom:8px; }
+    .event-list { display:grid; }
+    .event { display:grid; grid-template-columns:140px minmax(0,1fr) auto; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--line); }
+    .event:last-child { border-bottom:0; }
+    .event-date { font-size:12px; font-weight:700; }
+    .event-title { font-weight:650; }
+    .event-detail { color:var(--muted); font-size:12px; }
+    .event-amount { text-align:right; font-weight:700; white-space:nowrap; }
+    .tag { display:inline-block; border-radius:999px; background:var(--accent-soft); color:var(--accent); padding:3px 8px; font-size:11px; font-weight:700; }
+    .tag.due { background:var(--amber-soft); color:var(--amber); }
+    .tag.paid { background:var(--green-soft); color:var(--green); }
+    .footer { color:var(--muted); text-align:center; font-size:12px; padding:15px 0 25px; }
     .hidden { display:none !important; }
-    @media (max-width:780px) {
-      .shell { padding:16px; } header { flex-direction:column; }
-      .head-actions { justify-content:flex-start; }
-      .cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
-      .fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
-      .two { grid-template-columns:1fr; }
+    @media(max-width:720px) { .shell{padding:16px}.car-grid{grid-template-columns:1fr} }
+    @media(max-width:480px) {
+      .shell{padding:12px} header{align-items:flex-start; flex-direction:column}
+      .event{grid-template-columns:1fr auto; gap:3px 10px}
+      .event-date{grid-column:1}.event-main{grid-column:1}.event-amount{grid-column:2; grid-row:1/3}
+      .car-actions{align-items:stretch}.car-actions .button{flex:1}
     }
-    @media (max-width:460px) {
-      .shell { padding:12px; } .cards { gap:8px; }
-      .metric { padding:12px; } .metric .value { font-size:18px; }
-      .fields { gap:9px; } .next { align-items:flex-start; flex-direction:column; }
-      .check-row, .stage { grid-template-columns:auto 1fr; }
-      .check-row select, .stage input { grid-column:2; }
-      .field.wide { grid-column:1/-1; }
+    :root {
+      --bg:#f7faf9; --panel:#fff; --text:#17302d; --muted:#71857f; --line:#dce8e4;
+      --accent:#173d37; --accent-soft:#e9f2ef; --green:#408a7c; --green-soft:#e4f0ec;
+      --amber:#8c650f; --amber-soft:#fff0d3; --shadow:0 8px 28px #1c55440b;
+    }
+    [data-theme="dark"] {
+      --bg:#101a18; --panel:#1b2926; --text:#e5f0ec; --muted:#a2b5ae; --line:#354843;
+      --accent:#9ad5c4; --accent-soft:#253c36; --green:#9ad5c4; --green-soft:#253c36;
+      --amber:#f0c36d; --amber-soft:#45371d; --shadow:0 8px 28px #0003;
+    }
+    .shell{max-width:1060px;padding:26px}
+    header{align-items:center;margin-bottom:28px}
+    .brand{font-size:12px;font-weight:800;letter-spacing:.14em;color:#408a7c}
+    .intro{margin:0 0 25px}
+    .intro h1{font-size:clamp(30px,5vw,48px);letter-spacing:-.05em;margin:4px 0}
+    .intro p{margin:0;color:var(--muted)}
+    .head-actions{gap:8px}
+    .head-actions button,.head-actions .button{border-radius:8px}
+    .primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    [data-theme="dark"] .primary{color:#10201c}
+    .stat-strip{display:grid;grid-template-columns:repeat(3,1fr);background:var(--accent-soft);border-radius:14px;padding:16px;margin-bottom:22px}
+    .stat-strip>div+div{border-left:1px solid var(--line);padding-left:18px}
+    .stat-strip small{display:block;color:var(--muted);font-size:11px}
+    .stat-strip strong{font-size:20px}
+    .car-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .car-card{padding:19px;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+    .car-name{font-size:19px}
+    .tag{background:var(--amber-soft);color:var(--amber)}
+    .focus-body{display:flex;align-items:center;gap:20px;padding:22px 0}
+    .donut{position:relative;width:96px;height:96px;border-radius:50%;background:conic-gradient(#42a18b var(--progress),var(--accent-soft) 0);display:grid;place-items:center;flex:none}
+    .donut:before{content:"";position:absolute;width:72px;height:72px;border-radius:50%;background:var(--panel)}
+    .donut span{position:relative;font-size:23px;font-weight:750;text-align:center}
+    .donut small{display:block;color:var(--muted);font-size:10px}
+    .focus-values{display:grid;gap:11px;min-width:0}
+    .focus-values>div>small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+    .focus-values strong{font-size:15px}
+    .photo-card{overflow:hidden;padding:0}
+    .photo-card-hero{height:205px;position:relative;background:#1a2824}
+    .photo-card-hero img,.photo-card-placeholder{display:block;width:100%;height:100%;object-fit:cover}
+    .photo-card-placeholder{display:grid;place-items:center;background:linear-gradient(135deg,#dce9e4,#edf2ef);color:#52756b;font-weight:700}
+    .photo-card-hero:after{content:"";position:absolute;inset:30% 0 0;background:linear-gradient(transparent,#07130fcf);pointer-events:none}
+    .photo-card-caption{position:absolute;z-index:1;left:18px;right:18px;bottom:15px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;color:#fff}
+    .photo-card-caption .car-name{color:#fff}
+    .photo-card-caption .plate{color:#e0e9e5}
+    .photo-card-body{padding:18px}
+    .estimated-left{padding:13px;border-radius:11px;background:var(--accent-soft)}
+    .estimated-left .metric-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+    .estimated-left .metric-value{font-size:23px}
+    .explanation{margin:4px 0 0;color:var(--muted);font-size:11px}
+    .payment-progress{margin:14px 0}
+    .payment-progress-track{height:8px;overflow:hidden;border-radius:99px;background:var(--line)}
+    .payment-progress-track span{height:100%;display:block;border-radius:inherit;background:var(--green)}
+    .progress-copy{display:flex;justify-content:flex-start;gap:8px;margin-top:5px;color:var(--muted);font-size:10px}
+    .estimate-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+    .estimate-item{padding:10px;border:1px solid var(--line);border-radius:10px;min-width:0}
+    .estimate-item .metric-label{font-size:10px}
+    .estimate-item .metric-value{font-size:14px}
+    .invoice-status{padding:11px 12px;border-radius:10px;background:var(--accent-soft)}
+    .invoice-status.due{background:var(--amber-soft)}
+    .invoice-status strong{display:block;font-size:13px}
+    .invoice-status .hint{display:block;margin-top:3px;font-size:11px}
+    .photo-card .car-actions{margin-top:14px}
+    .next-action{background:var(--amber-soft);border-radius:9px;margin:0;padding:10px 12px;min-height:0}
+    .next-action strong{font-size:13px}
+    .car-actions{margin-top:14px}
+    .car-actions .primary{background:var(--accent);color:#fff}
+    .remove{color:var(--red)}
+    .event-list{display:grid}
+    .event{grid-template-columns:95px minmax(0,1fr) auto;gap:12px;padding:12px 0;color:var(--text);text-decoration:none}
+    .event-date{font-size:11px;color:var(--muted);font-weight:700}
+    .event-detail{font-size:11px}
+    .event-amount{font-size:13px}
+    .action-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:18px}
+    .action-card{min-width:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:var(--shadow)}
+    .action-card h3{font-size:15px}
+    .action-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+    .action-card-head .hint{font-size:11px}
+    .task-list{display:grid}
+    .task-row{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:start;gap:9px;padding:10px 0;border-bottom:1px solid var(--line)}
+    .task-row:last-child{border-bottom:0}
+    .task-row input{width:16px;height:16px;margin:2px 0 0;accent-color:var(--green)}
+    .task-title{font-size:12px;font-weight:650}
+    .task-detail{margin-top:2px;color:var(--muted);font-size:10px}
+    .task-row a{align-self:center;color:var(--accent);font-size:10px;text-decoration:none;white-space:nowrap}
+    .task-row a:hover{text-decoration:underline}
+    .task-toggle{margin-top:8px;padding:5px 0;border:0;background:none;color:var(--accent);font-size:11px}
+    .task-empty,.payment-empty{padding:18px 0;color:var(--muted);font-size:12px}
+    .event-amount .small{font-size:10px}
+    .event-amount .tag{margin-left:7px}
+    .panel{border:0;box-shadow:none;padding:0;margin:36px 0 0;background:transparent}
+    .section-head{margin-bottom:10px}
+    .footer{padding-top:20px}
+    [data-theme="dark"] .donut:before{background:var(--panel)}
+    @media(max-width:680px){
+      .shell{padding:15px}.car-grid{grid-template-columns:1fr}
+      .stat-strip{grid-template-columns:1fr;gap:10px}
+      .stat-strip>div+div{border:0;border-top:1px solid var(--line);padding:10px 0 0}
+      header{align-items:flex-start;flex-direction:column;gap:12px}
+      .action-grid{grid-template-columns:1fr}
+      .event{grid-template-columns:1fr auto;gap:4px 9px}
+      .event-date,.event-main{grid-column:1}.event-amount{grid-column:2;grid-row:1/3}
     }
   </style>
 </head>
 <body>
   <main class="shell">
     <header>
-      <div>
-        <h1>Mazda 3 import tracker</h1>
-        <div class="subtle">SLG7315S · Ireland · Your data stays in this browser</div>
-      </div>
+      <div class="intro"><div class="brand">IMPORT / FOCUS</div><h1>Less noise. More clarity.</h1><p>See the amount paid, the amount still needed, and the next action for every car.</p></div>
       <div class="head-actions">
-        <button id="themeToggle" type="button" aria-label="Toggle light and dark mode">🌙 Dark mode</button>
-        <button id="exportJson" type="button">Export JSON</button>
-        <button id="importButton" type="button">Import JSON</button>
-        <input id="importFile" class="hidden" type="file" accept="application/json,.json">
+        <a class="button" href="card-options.html">Compare card styles</a>
+        <button id="themeToggle" type="button">🌙 Dark mode</button>
+        <button id="addCar" class="primary" type="button">＋ Add a car</button>
       </div>
     </header>
-    <nav aria-label="Main sections">
-      <a href="#overview">Overview</a><a href="#costs">Costs</a><a href="#documents">Documents</a><a href="#timeline">Timeline</a><a href="#vehicle">Vehicle</a>
-    </nav>
-    <section id="overview">
-      <div class="next">
-        <div><strong>Next action · Pay ¥24,500 outstanding</strong><span class="subtle">Due 27 Nov 2026 at 14:11 · invoice time zone not stated</span></div>
-        <span class="status need">Payment due</span>
-      </div>
-      <div class="grid cards">
-        <div class="metric"><span class="caption">Estimated all-in · low</span><strong class="value" id="totalLow">—</strong><span class="caption">Includes VRT and fees</span></div>
-        <div class="metric"><span class="caption">Estimated all-in · high</span><strong class="value" id="totalHigh">—</strong><span class="caption">Includes VRT and fees</span></div>
-        <div class="metric"><span class="caption">Paid so far</span><strong class="value" id="paidTotal">—</strong><span class="caption">Recorded payments only</span></div>
-        <div class="metric"><span class="caption">Remaining · high estimate</span><strong class="value" id="remainingTotal">—</strong><span class="caption">Less recorded payments</span></div>
-      </div>
-      <div class="panel">
-        <div class="section-head"><h2>Import snapshot</h2><span class="status waiting">Estimates — verify before payment</span></div>
-        <div class="grid two">
-          <div><strong id="scenarioA">10% duty scenario: —</strong><div class="hint">Assumes 23% VAT on CIF plus duty.</div></div>
-          <div><strong id="scenarioB">0% duty scenario: —</strong><div class="hint">0% duty eligibility depends on origin and shipping documents.</div></div>
-        </div>
-        <div class="warning">Revenue uses its own monthly customs exchange rate for the month the ship arrives. The working ¥175.05 rate and all duty, VAT, VRT, and fee figures below are unverified estimates.</div>
+    <div id="error" class="panel hidden" role="alert"></div>
+    <section class="stat-strip" aria-label="Fleet summary">
+      <div><small>Cars tracked</small><strong id="carCount">0</strong></div>
+      <div><small>Fleet paid</small><strong id="fleetPaid">—</strong></div>
+      <div><small>Fleet estimated unpaid</small><strong id="fleetRemaining">—</strong></div>
+    </section>
+    <section id="carGrid" class="car-grid" aria-label="Your cars"></section>
+    <section id="emptyState" class="panel empty hidden">
+      <h2>No cars yet</h2><p class="subtle">Add a car to start tracking its import.</p>
+      <button class="primary" type="button" data-add-car>Add a car</button>
+    </section>
+    <section id="importantDates" class="panel">
+      <div class="section-head"><div><h2>Payments &amp; to-do</h2><div class="hint">See what is coming up, and what still needs doing.</div></div><a class="button" href="payment-options.html">Compare payment views</a></div>
+      <div class="action-grid">
+        <section class="action-card" aria-labelledby="paymentsTitle">
+          <div class="action-card-head"><div><h3 id="paymentsTitle">Payment timeline</h3><div class="hint">Upcoming costs and dated import steps.</div></div></div>
+          <div id="eventList" class="event-list"></div>
+          <div id="noEvents" class="payment-empty hidden">No upcoming payments or dated steps. Add due dates in a car's tracker to see them here.</div>
+        </section>
+        <section class="action-card" aria-labelledby="todoTitle">
+          <div class="action-card-head"><div><h3 id="todoTitle">To do</h3><div id="todoCount" class="hint"></div></div></div>
+          <div id="todoList" class="task-list"></div>
+        </section>
       </div>
     </section>
-
-    <section id="costs" class="panel">
-      <div class="section-head"><div><h2>Costs</h2><div class="hint">Change any estimate as you receive confirmed figures.</div></div><div class="actions"><button id="exportCsv" type="button">Export costs CSV</button></div></div>
-      <h3>Invoice and customs assumptions</h3>
-      <div class="fields">
-        <div class="field"><label for="fob">Car / FOB (JPY)</label><input id="fob" type="number" min="0" step="1"><small class="eur-equivalent" data-invoice-eur="fob"></small></div>
-        <div class="field"><label for="freight">Freight (JPY)</label><input id="freight" type="number" min="0" step="1"><small class="eur-equivalent" data-invoice-eur="freight"></small></div>
-        <div class="field"><label for="other">Other cost (JPY)</label><input id="other" type="number" min="0" step="1"><small class="eur-equivalent" data-invoice-eur="other"></small></div>
-        <div class="field"><label for="insurance">Insurance (JPY)</label><input id="insurance" type="number" min="0" step="1"><small class="eur-equivalent" data-invoice-eur="insurance"></small></div>
-        <div class="field"><label for="rate">Working exchange rate (JPY per €1)</label><input id="rate" type="number" min="0.0001" step="0.01"></div>
-        <div class="field"><label for="paidJpy">Paid on invoice (JPY)</label><input id="paidJpy" type="number" min="0" step="1"><small class="eur-equivalent" data-invoice-eur="paidJpy"></small></div>
-        <div class="field"><label for="dutyRate">Duty rate</label><select id="dutyRate"><option value="0.1">10%</option><option value="0">0%</option></select></div>
-        <div class="field"><label for="vatEnabled">Import VAT</label><select id="vatEnabled"><option value="true">On · 23%</option><option value="false">Off</option></select></div>
-      </div>
-      <div class="hint" id="invoiceEuro" style="margin-top:10px"></div>
-      <div class="grid two" style="margin-top:18px">
-        <div>
-          <h3>VRT helper · estimate only</h3>
-          <div class="fields">
-            <div class="field"><label for="omsp">OMSP (€)</label><input id="omsp" type="number" min="0" step="1"><small class="jpy-equivalent" data-vrt-jpy="omsp"></small></div>
-            <div class="field"><label for="co2">CO₂ (g/km)</label><input id="co2" type="number" min="0" step="1"></div>
-            <div class="field"><label for="vrtBand">CO₂ band rate (%)</label><input id="vrtBand" type="number" min="0" max="100" step="0.1"></div>
-            <div class="field"><label for="nox">NOx levy (€)</label><input id="nox" type="number" min="0" max="600" step="1"><small class="jpy-equivalent" data-vrt-jpy="nox"></small></div>
-            <div class="field"><label for="vrtLow">VRT range low (€)</label><input id="vrtLow" type="number" min="0" step="1"><small class="jpy-equivalent" data-vrt-jpy="low"></small></div>
-            <div class="field"><label for="vrtHigh">VRT range high (€)</label><input id="vrtHigh" type="number" min="0" step="1"><small class="jpy-equivalent" data-vrt-jpy="high"></small></div>
-          </div>
-          <div id="emissionsWarning" class="warning">Emissions evidence missing: Revenue may apply the highest VRT rates, up to 41% of OMSP plus up to €600 NOx for petrol.</div>
-          <div class="hint" id="vrtEstimate"></div>
-        </div>
-        <div>
-          <h3>Cost summary</h3>
-          <div class="hint" id="calculationBreakdown"></div>
-        </div>
-      </div>
-      <div class="section-head" style="margin-top:22px"><div><h3 style="margin:0">Other costs</h3><div class="hint">Estimate, actual, status, date, notes and receipt link.</div></div><button id="addCost" type="button">+ Add line</button></div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Category</th><th>Estimate (€)</th><th>Actual (€)</th><th>Status</th><th>Date</th><th>Notes / receipt URL</th><th></th></tr></thead>
-          <tbody id="costRows"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section id="documents" class="panel">
-      <div class="section-head"><div><h2>Documents checklist</h2><div class="hint">Confirm the final requirements with your clearance agent and NCTS.</div></div><span class="status waiting" id="docProgress">0 / 13 have</span></div>
-      <div id="documentRows" class="document-list"></div>
-    </section>
-    <section id="timeline" class="panel">
-      <div class="section-head"><div><h2>Timeline</h2><div class="hint">Dates marked as estimated or to confirm are not confirmed.</div></div></div>
-      <div id="timelineRows"></div>
-    </section>
-    <section id="vehicle" class="panel">
-      <div class="section-head"><div><h2>Vehicle details</h2><div class="hint">Prefilled from your brief. Edit any field to correct it.</div></div></div>
-      <div class="fields" id="vehicleFields"></div>
-    </section>
-    <div class="footer">Stored locally in this browser. Export a JSON backup regularly. This tracker is not tax or registration advice.</div>
+    <div class="footer">Your car data is saved in this browser. Open a car to update its details, costs, documents, and timeline.</div>
   </main>
+  <script src="tracker.js"></script>
   <script>
     (() => {
-      const STORAGE_KEY = "mazda3-import-tracker-v1";
-      const documentsSeed = [
-        "Singapore vehicle record and deregistration certificate",
-        "Commercial invoice (¥745,500) as proof of price",
-        "Payment receipts (¥721,000 paid, ¥24,500 due)",
-        "Bill of Lading (port of loading and duty-rate evidence)",
-        "Statement on Origin or export certificate (if claiming 0% duty)",
-        "CO₂ and NOx emissions evidence (CoC or manufacturer letter)",
-        "Customs declaration and clearance agent paperwork",
-        "Customs payment receipt (duty and VAT)",
-        "Arrival photos, including odometer",
-        "Owner ID, proof of address and PPS number",
-        "NCTS registration receipt and Vehicle Registration Certificate",
-        "NCT certificate",
-        "Motor tax and insurance"
-      ];
-      const stagesSeed = [
-        { name:"Pay invoice balance", date:"2026-11-27", detail:"¥24,500 due at 14:11; time zone not stated", status:"Current" },
-        { name:"Shipping and arrival", date:"", detail:"January 2027 was suggested; unverified — confirm with shipper", status:"Waiting" },
-        { name:"Customs clearance", date:"", detail:"Arrange clearance agent; pay applicable duty and VAT on arrival", status:"Waiting" },
-        { name:"Register and pay VRT", date:"", detail:"Within 30 days of arrival per one guide; confirm with NCTS", status:"Waiting" },
-        { name:"Plates, NCT, tax and insurance", date:"", detail:"Confirm required sequence with NCTS", status:"Waiting" },
-        { name:"Prepare and sell", date:"", detail:"Repairs, prep and sale planning", status:"Waiting" }
-      ];
-      const costSeed = [
-        { category:"Clearance agent", estimate:150, actual:0, status:"estimated", date:"", notes:"Estimate €150–€200", receipt:"" },
-        { category:"Port handling", estimate:60, actual:0, status:"estimated", date:"", notes:"Estimate €50–€100", receipt:"" },
-        { category:"NCT", estimate:60, actual:0, status:"estimated", date:"", notes:"Confirm current fee", receipt:"" },
-        { category:"Plates", estimate:30, actual:0, status:"estimated", date:"", notes:"", receipt:"" },
-        { category:"Insurance", estimate:0, actual:0, status:"estimated", date:"", notes:"", receipt:"" },
-        { category:"Motor tax", estimate:0, actual:0, status:"estimated", date:"", notes:"", receipt:"" },
-        { category:"Repairs and prep", estimate:0, actual:0, status:"estimated", date:"", notes:"", receipt:"" }
-      ];
-      const vehicleSeed = [
-        ["Model","Mazda 3 4-door sedan, 1.5L petrol (1496 cc), 6-speed automatic (6EAT)"],
-        ["Singapore plate","SLG7315S"],["VIN / chassis no.","JM6BM42A8G0338712"],["Engine no.","P520359077"],
-        ["Colour / extras","Black, with sunroof"],["Unladen / max laden weight","1,321 kg / 1,835 kg"],
-        ["Year of manufacture","2016"],["First registration","12 Oct 2016 (Singapore)"],
-        ["Deregistered","29 Sep 2026"],["Ownership transfers","4 (up to 5 owners)"],
-        ["Mileage","About 50,000 km (confirm from photos or inspection report)"],
-        ["Irish plate","Will begin 162; county code depends on address, sequence assigned by Revenue"]
-      ];
-      const seed = {
-        invoice:{ fob:406000, freight:315000, other:24500, insurance:0, rate:175.05, paidJpy:721000, dutyRate:0.1, vatEnabled:true },
-        vrt:{ omsp:0, co2:0, band:0, nox:0, low:1500, high:2850 },
-        costs:costSeed, documents:documentsSeed.map(name=>({name,status:"Need",notes:"",link:""})),
-        stages:stagesSeed, vehicle:vehicleSeed.map(([label,value])=>({label,value}))
+      const $=id=>document.getElementById(id);
+      const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+      const n=value=>Number(value)||0;
+      const money=value=>new Intl.NumberFormat("en-IE",{style:"currency",currency:"EUR",maximumFractionDigits:2}).format(Number.isFinite(value)?value:0);
+      const yen=value=>`¥${new Intl.NumberFormat("en-IE",{maximumFractionDigits:0}).format(Number.isFinite(value)?value:0)}`;
+      const dateText=value=>value?new Intl.DateTimeFormat("en-IE",{day:"numeric",month:"short",year:"numeric"}).format(new Date(`${value}T00:00:00`)):"Date to confirm";
+      const field=(data,label)=>data.vehicle?.find(item=>item.label===label)?.value||"";
+      const amountPair=(eur,rate)=>`<span>${money(eur)}</span><small class="small">≈ ${yen(eur*n(rate))}</small>`;
+      const invoiceTotal=data=>n(data.invoice?.fob)+n(data.invoice?.freight)+n(data.invoice?.other)+n(data.invoice?.insurance);
+      let showAllTasks=false;
+      const calculations=data=>{
+        const i=data.invoice||{},v=data.vrt||{},rate=n(i.rate);
+        const cif=rate>0?invoiceTotal(data)/rate:0;
+        const duty=cif*n(i.dutyRate),vat=i.vatEnabled?(cif+duty)*0.23:0;
+        const fees=(data.costs||[]).reduce((sum,c)=>sum+Math.max(n(c.estimate),n(c.actual)),0);
+        const low=cif+duty+vat+fees+n(v.low),high=cif+duty+vat+fees+n(v.high);
+        const paid=Math.min(n(i.paidJpy),invoiceTotal(data))/Math.max(rate,0.000001)
+          +(data.costs||[]).reduce((sum,c)=>sum+(c.status==="paid"?n(c.actual):0),0)
+          +Object.values(data.charges||{}).reduce((sum,c)=>sum+(c.status==="paid"?n(c.actual):0),0);
+        return {low,high,paid,remaining:Math.max(high-paid,0),cif,duty,vat,fees};
       };
-      const clone = obj => JSON.parse(JSON.stringify(obj));
-      const mergeData = (saved) => {
-        if (!saved || typeof saved !== "object" || Array.isArray(saved)) throw new Error("JSON must contain an object.");
-        const base = clone(seed);
-        if (saved.invoice && typeof saved.invoice === "object") Object.assign(base.invoice, saved.invoice);
-        if (saved.vrt && typeof saved.vrt === "object") Object.assign(base.vrt, saved.vrt);
-        for (const key of ["costs","documents","stages","vehicle"]) {
-          if (saved[key] !== undefined) {
-            if (!Array.isArray(saved[key]) || saved[key].some(row => !row || typeof row !== "object" || Array.isArray(row))) throw new Error(`Invalid ${key} data.`);
-            base[key] = saved[key];
+      const carName=data=>field(data,"Model").trim().split(",")[0].trim()||"Car details not added";
+      const plateFor=data=>field(data,"Singapore plate").trim()||field(data,"Irish plate").trim()||"Plate not added";
+      const addEvent=(events,car,kind,title,date,detail,amount,rate,status="due")=>{
+        events.push({car:carName(car.data),id:car.id,kind,title,date,detail,amount,rate,status});
+      };
+      function collectEvents(fleet) {
+        const events=[];
+        for(const car of fleet.cars) {
+          const d=car.data||{},i=d.invoice||{},v=d.vrt||{},rate=n(i.rate),total=invoiceTotal(d);
+          const balance=Math.max(total-n(i.paidJpy),0);
+          if(balance>0) addEvent(events,car,"payment","Invoice balance",i.dueDate,"Invoice payment",balance/Math.max(rate,0.000001),rate,"due");
+          const cif=rate>0?total/rate:0,duty=cif*n(i.dutyRate),vat=i.vatEnabled?(cif+duty)*0.23:0;
+          const estimates={duty,vat,vrt:n(v.high)};
+          for(const [key,title,timing] of [["duty","Customs duty","On arrival"],["vat","Import VAT","On arrival"],["vrt","VRT","Within 30 days of arrival (confirm)"]]) {
+            const record=d.charges?.[key]||{actual:0,status:"estimated",date:""};
+            const estimate=estimates[key], amount=record.status==="charged"&&n(record.actual)>0?n(record.actual):estimate;
+            if(record.status!=="paid"&&amount>0) addEvent(events,car,"charge",title,record.date,timing,amount,rate,record.status==="charged"?"charged":"due");
+          }
+          for(const cost of d.costs||[]) {
+            if(cost.status==="paid") continue;
+            const amount=cost.status==="charged"&&n(cost.actual)>0?n(cost.actual):Math.max(n(cost.estimate),n(cost.actual));
+            if(amount>0) addEvent(events,car,"cost",cost.category,cost.date,cost.date?"Scheduled cost":"Date to confirm",amount,rate,cost.status==="charged"?"charged":"due");
+          }
+          for(const stage of d.stages||[]) {
+            if(stage.date&&stage.status!=="Done"&&stage.name!=="Pay invoice balance") events.push({car:carName(d),id:car.id,kind:"step",title:stage.name,date:stage.date,detail:stage.detail,amount:null,rate,status:""});
           }
         }
-        return base;
-      };
-      let data;
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        data = raw ? mergeData(JSON.parse(raw)) : clone(seed);
-      } catch (error) {
-        console.error("Could not load saved tracker data:", error);
-        data = clone(seed);
+        return events.sort((a,b)=>(a.date||"9999-12-31").localeCompare(b.date||"9999-12-31")).slice(0,30);
       }
-      const $ = id => document.getElementById(id);
-      const money = value => new Intl.NumberFormat("en-IE",{style:"currency",currency:"EUR",maximumFractionDigits:2}).format(Number.isFinite(value)?value:0);
-      const yen = value => `¥${new Intl.NumberFormat("en-IE",{maximumFractionDigits:0}).format(Number.isFinite(value)?value:0)}`;
-      const rate = () => number(data.invoice.rate);
-      const moneyPair = value => `<span>${money(value)}</span><small class="jpy-equivalent">≈ ${yen(value*rate())}</small>`;
-      const number = value => Number(value) || 0;
-      const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
-      const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(error) { console.error("Could not save tracker data:",error); alert("Could not save your changes in this browser. Export a JSON backup and check available storage."); } };
-      const customs = (dutyRate=data.invoice.dutyRate) => {
-        const i=data.invoice, rate=number(i.rate);
-        const cif=rate>0?(number(i.fob)+number(i.freight)+number(i.insurance)+number(i.other))/rate:0;
-        const duty=cif*number(dutyRate), vat=i.vatEnabled?((cif+duty)*0.23):0;
-        return {cif,duty,vat,port:duty+vat,subtotal:cif+duty+vat};
-      };
-      const fees = () => data.costs.reduce((sum,c)=>sum+Math.max(number(c.estimate),number(c.actual)),0);
-      const paid = () => number(data.invoice.paidJpy)/Math.max(number(data.invoice.rate),0.000001) + data.costs.reduce((sum,c)=>sum+(c.status==="paid"?number(c.actual):0),0);
-      const allIn = (scenarioDuty, vrt) => customs(scenarioDuty).subtotal+fees()+number(vrt);
-      function updateSummary() {
-        const c=customs(), a=customs(0.1), b=customs(0), feeTotal=fees();
-        $("scenarioA").innerHTML=`10% duty scenario: ${moneyPair(a.port)} payable at port · ${moneyPair(a.subtotal)} before VRT and fees`;
-        $("scenarioB").innerHTML=`0% duty scenario: ${moneyPair(b.port)} payable at port · ${moneyPair(b.subtotal)} before VRT and fees`;
-        $("invoiceEuro").innerHTML=`CIF customs value: <strong>${moneyPair(c.cif)}</strong> · invoice total ${yen(number(data.invoice.fob)+number(data.invoice.freight)+number(data.invoice.other)+number(data.invoice.insurance))} at the working rate.`;
-        const low=allIn(number(data.invoice.dutyRate),data.vrt.low), high=allIn(number(data.invoice.dutyRate),data.vrt.high), recorded=paid();
-        $("totalLow").innerHTML=moneyPair(low); $("totalHigh").innerHTML=moneyPair(high);
-        $("paidTotal").innerHTML=moneyPair(recorded); $("remainingTotal").innerHTML=moneyPair(Math.max(0,high-recorded));
-        const estimate=number(data.vrt.omsp)*(number(data.vrt.band)/100)+Math.min(600,number(data.vrt.nox));
-        $("vrtEstimate").innerHTML=`Formula helper: ${moneyPair(estimate)} (OMSP × CO₂ band rate + NOx, capped at €600). Placeholder range: ${moneyPair(number(data.vrt.low))}–${moneyPair(number(data.vrt.high))}.`;
-        $("emissionsWarning").classList.toggle("hidden",number(data.vrt.co2)>0 && number(data.vrt.band)>0);
-        $("calculationBreakdown").innerHTML=
-          `<p>CIF: <strong>${moneyPair(c.cif)}</strong></p><p>Duty (${(number(data.invoice.dutyRate)*100).toFixed(0)}%): <strong>${moneyPair(c.duty)}</strong></p><p>Import VAT (${data.invoice.vatEnabled?"23%":"off"}): <strong>${moneyPair(c.vat)}</strong></p><p>Payable at port: <strong>${moneyPair(c.port)}</strong></p><p>Other cost estimates: <strong>${moneyPair(feeTotal)}</strong></p><p>Selected VRT range: <strong>${moneyPair(data.vrt.low)}–${moneyPair(data.vrt.high)}</strong></p><p>All-in low/high: <strong>${moneyPair(low)}–${moneyPair(high)}</strong></p>`;
-        document.querySelectorAll("[data-invoice-eur]").forEach(el=>{
-          const yenAmount=number(data.invoice[el.dataset.invoiceEur]);
-          el.textContent=rate()>0?`≈ ${money(yenAmount/rate())} at the working rate`:"EUR conversion unavailable";
-        });
-        document.querySelectorAll("[data-vrt-jpy]").forEach(el=>{
-          const amount=number(data.vrt[el.dataset.vrtJpy]);
-          el.textContent=rate()>0?`≈ ${yen(amount*rate())} at the working rate`:"JPY conversion unavailable";
-        });
-        document.querySelectorAll("[data-cost-jpy]").forEach(el=>{
-          const [index,key]=el.dataset.costJpy.split(":");
-          el.textContent=rate()>0?`≈ ${yen(number(data.costs[Number(index)]?.[key])*rate())}`:"JPY conversion unavailable";
-        });
+      function renderEvents(fleet) {
+        const events=collectEvents(fleet);
+        $("eventList").innerHTML=events.map(event=>`<a class="event" href="car.html?id=${encodeURIComponent(event.id)}">
+          <div class="event-date">${esc(dateText(event.date))}</div>
+          <div class="event-main"><div class="event-title">${esc(event.car)} · ${esc(event.title)}</div><div class="event-detail">${esc(event.detail)} · ${esc(event.kind)}</div></div>
+          <div class="event-amount">${event.amount===null?`<span class="tag">Next step</span>`:`${amountPair(event.amount,event.rate)}<span class="tag ${event.status}">${esc(event.status)}</span>`}</div>
+        </a>`).join("");
+        $("noEvents").classList.toggle("hidden",events.length>0);
       }
-      const invoiceFields=["fob","freight","other","insurance","rate","paidJpy","dutyRate","vatEnabled"];
-      function renderInvoice() {
-        for(const key of invoiceFields) $(key).value=String(data.invoice[key]);
-        for(const key of ["omsp","co2","band","nox","low","high"]) $(key==="band"?"vrtBand":key==="low"?"vrtLow":key==="high"?"vrtHigh":key).value=String(data.vrt[key]);
+      function renderTasks(fleet) {
+        const tasks=fleet.cars.flatMap(car=>ImportTrackerStore.collectTodoItems(car).map(task=>({...task,car:carName(car.data)})))
+          .sort((a,b)=>a.priority-b.priority||(a.date||"9999-12-31").localeCompare(b.date||"9999-12-31")||a.index-b.index);
+        $("todoCount").textContent=tasks.length?`${tasks.length} open across ${fleet.cars.length} car${fleet.cars.length===1?"":"s"}`:fleet.cars.length?"Everything is done":"No cars to track";
+        const shown=showAllTasks?tasks:tasks.slice(0,5);
+        $("todoList").innerHTML=tasks.length?`${shown.map(task=>{
+          const meta=task.date?`Due ${dateText(task.date)}`:task.status;
+          const detail=[meta,task.detail].filter(Boolean).join(" · ");
+          const checkedLabel=task.kind==="document"?"Mark document as have":"Mark stage as done";
+          return `<div class="task-row"><input type="checkbox" aria-label="${checkedLabel}: ${esc(task.title)}" data-task-kind="${task.kind}" data-task-car="${esc(task.carId)}" data-task-index="${task.index}"><div><div class="task-title">${esc(task.car)} · ${esc(task.title)}</div><div class="task-detail">${esc(detail)}</div></div><a href="car.html?id=${encodeURIComponent(task.carId)}">Open →</a></div>`;
+        }).join("")}${tasks.length>5?`<button class="task-toggle" type="button" data-toggle-tasks>${showAllTasks?"Show fewer":"Show all"} ${showAllTasks?"":"("+tasks.length+")"} tasks</button>`:""}`:`<div class="task-empty">${fleet.cars.length?"All caught up. New tasks will appear as you update your import.":"Add a car to create your to-do list."}</div>`;
       }
-      function renderCosts() {
-        $("costRows").innerHTML=data.costs.map((c,index)=>`<tr>
-          <td><input aria-label="Cost category" data-cost="${index}" data-key="category" value="${esc(c.category)}"></td>
-          <td><input aria-label="Estimated euros" data-cost="${index}" data-key="estimate" type="number" min="0" step=".01" value="${number(c.estimate)}"><small class="jpy-equivalent" data-cost-jpy="${index}:estimate"></small></td>
-          <td><input aria-label="Actual euros" data-cost="${index}" data-key="actual" type="number" min="0" step=".01" value="${number(c.actual)}"><small class="jpy-equivalent" data-cost-jpy="${index}:actual"></small></td>
-          <td><select aria-label="Cost status" data-cost="${index}" data-key="status">${["estimated","quoted","paid"].map(s=>`<option ${c.status===s?"selected":""}>${s}</option>`).join("")}</select></td>
-          <td><input aria-label="Cost date" data-cost="${index}" data-key="date" type="date" value="${esc(c.date)}"></td>
-          <td><input aria-label="Notes or receipt URL" data-cost="${index}" data-key="notes" value="${esc(c.notes)}" placeholder="Notes"><input aria-label="Receipt link" data-cost="${index}" data-key="receipt" value="${esc(c.receipt)}" placeholder="Receipt URL" style="margin-top:5px"></td>
-          <td><button class="row-remove" type="button" data-remove="${index}" aria-label="Remove cost line">×</button></td></tr>`).join("");
+      function renderCars(fleet) {
+        $("carGrid").innerHTML=fleet.cars.map(car=>{
+          const d=car.data||{},calc=calculations(d),rate=n(d.invoice?.rate);
+          const totalInvoice=invoiceTotal(d),invoiceBalance=Math.max(totalInvoice-n(d.invoice?.paidJpy),0);
+          const progress=calc.high>0?Math.min(calc.paid/calc.high*100,100):0;
+          const photo=field(d,"Singapore plate")==="SLG7315S"
+            ?`<img src="mazda-3-photo.jpg" alt="Black Mazda 3 with Singapore plate SLG7315S">`
+            :`<div class="photo-card-placeholder">Add a car photo</div>`;
+          const invoiceStatus=invoiceBalance>0
+            ?`<div class="invoice-status due"><strong>Invoice balance due · ${amountPair(invoiceBalance/Math.max(rate,0.000001),rate)}</strong><span class="hint">¥${new Intl.NumberFormat("en-IE",{maximumFractionDigits:0}).format(invoiceBalance)} · Due ${esc(dateText(d.invoice?.dueDate))}</span></div>`
+            :`<div class="invoice-status"><strong>${totalInvoice>0?"Invoice paid in full":"No invoice balance recorded"}</strong><span class="hint">${totalInvoice>0?"No invoice payment is currently due.":"Add invoice details in the tracker if needed."}</span></div>`;
+          return `<article class="car-card">
+            <div class="photo-card-hero">${photo}<div class="photo-card-caption"><div><h2 class="car-name">${esc(carName(d))}</h2><div class="plate">${esc(plateFor(d))}${field(d,"Year of manufacture")?` · ${esc(field(d,"Year of manufacture"))}`:""}</div></div><span class="tag ${invoiceBalance>0?"due":"paid"}">${invoiceBalance>0?"Invoice payment due":"No invoice balance"}</span></div></div>
+            <div class="photo-card-body">
+              <div class="estimated-left"><span class="metric-label">Estimated left to pay</span><strong class="metric-value">${amountPair(calc.remaining,rate)}</strong><p class="explanation">High total estimate minus paid so far. Includes estimated costs not yet paid.</p></div>
+              <div class="payment-progress"><div class="payment-progress-track"><span style="width:${progress}%"></span></div><div class="progress-copy"><span>${Math.round(progress)}% of high estimate paid</span></div></div>
+              <div class="estimate-grid"><div class="estimate-item"><span class="metric-label">Paid so far</span><strong class="metric-value">${amountPair(calc.paid,rate)}</strong></div><div class="estimate-item"><span class="metric-label">Total estimate · low to high</span><strong class="metric-value">${amountPair(calc.low,rate)} – ${amountPair(calc.high,rate)}</strong></div></div>
+              ${invoiceStatus}
+            </div>
+            <div class="photo-card-body" style="padding-top:0"><div class="car-actions"><a class="button primary" href="car.html?id=${encodeURIComponent(car.id)}">Open tracker</a><button type="button" class="remove" data-delete-car="${esc(car.id)}" aria-label="Remove ${esc(carName(d))}">Remove car</button></div></div>
+          </article>`;
+        }).join("");
+        $("emptyState").classList.toggle("hidden",fleet.cars.length>0);
+        $("carGrid").classList.toggle("hidden",fleet.cars.length===0);
+        const totals=fleet.cars.reduce((sum,car)=>{
+          const c=calculations(car.data),rate=n(car.data?.invoice?.rate);
+          sum.paid+=c.paid;sum.remaining+=c.remaining;
+          sum.paidJpy+=c.paid*rate;sum.remainingJpy+=c.remaining*rate;
+          return sum;
+        },{paid:0,remaining:0,paidJpy:0,remainingJpy:0});
+        $("carCount").textContent=String(fleet.cars.length);
+        $("fleetPaid").innerHTML=`${money(totals.paid)}<small class="small">≈ ${yen(totals.paidJpy)}</small>`;
+        $("fleetRemaining").innerHTML=`${money(totals.remaining)}<small class="small">≈ ${yen(totals.remainingJpy)}</small>`;
+        renderEvents(fleet);
+        renderTasks(fleet);
       }
-      function renderDocuments() {
-        $("documentRows").innerHTML=data.documents.map((d,i)=>`<div class="check-row">
-          <input type="checkbox" aria-label="Mark document as have" data-doc-have="${i}" ${d.status==="Have"?"checked":""}>
-          <div><strong>${esc(d.name)}</strong><input aria-label="Document notes" data-doc="${i}" data-key="notes" value="${esc(d.notes)}" placeholder="Notes" style="margin-top:6px"><input aria-label="Document link" data-doc="${i}" data-key="link" value="${esc(d.link)}" placeholder="Optional link" style="margin-top:5px"></div>
-          <select aria-label="Document status" data-doc="${i}" data-key="status">${["Have","Need","Waiting"].map(s=>`<option ${d.status===s?"selected":""}>${s}</option>`).join("")}</select></div>`).join("");
-        const have=data.documents.filter(d=>d.status==="Have").length;
-        $("docProgress").textContent=`${have} / ${data.documents.length} have`;
+      let fleet;
+      try { fleet=ImportTrackerStore.loadFleet(); renderCars(fleet); }
+      catch(error) { console.error("Could not load saved cars:",error); $("error").textContent=error.message; $("error").classList.remove("hidden"); }
+      function addCar() {
+        try { const id=ImportTrackerStore.addCar(); location.href=`car.html?id=${encodeURIComponent(id)}`; }
+        catch(error) { console.error("Could not add car:",error); alert(error.message); }
       }
-      function renderStages() {
-        $("timelineRows").innerHTML=data.stages.map((s,i)=>`<div class="stage ${s.status==="Done"?"done":s.status==="Current"?"current":""}">
-          <span class="stage-marker" aria-hidden="true"></span><div><strong>${esc(s.name)}</strong><div class="hint">${esc(s.detail)}</div></div>
-          <div><input aria-label="Stage due date" data-stage="${i}" data-key="date" type="date" value="${esc(s.date)}"><select aria-label="Stage status" data-stage="${i}" data-key="status" style="margin-top:5px">${["Waiting","Current","Done"].map(x=>`<option ${s.status===x?"selected":""}>${x}</option>`).join("")}</select></div></div>`).join("");
-      }
-      function renderVehicle() {
-        $("vehicleFields").innerHTML=data.vehicle.map((v,i)=>`<div class="field"><label>${esc(v.label)}</label><input aria-label="${esc(v.label)}" data-vehicle="${i}" value="${esc(v.value)}"></div>`).join("");
-      }
-      function rerender() { save(); updateSummary(); }
-      renderInvoice(); renderCosts(); renderDocuments(); renderStages(); renderVehicle(); updateSummary();
-      document.querySelectorAll("#costs input, #costs select").forEach(control=>control.addEventListener("input",()=>{
-        const id=control.id;
-        if(invoiceFields.includes(id)) data.invoice[id]=id==="dutyRate"?number(control.value):id==="vatEnabled"?control.value==="true":number(control.value);
-        const vrtMap={omsp:"omsp",co2:"co2",vrtBand:"band",nox:"nox",vrtLow:"low",vrtHigh:"high"};
-        if(vrtMap[id]) data.vrt[vrtMap[id]]=number(control.value);
-        rerender();
-      }));
-      $("costRows").addEventListener("input",event=>{
-        const el=event.target, i=Number(el.dataset.cost), key=el.dataset.key;
-        if(Number.isInteger(i)&&key) data.costs[i][key]=["estimate","actual"].includes(key)?number(el.value):el.value;
-        rerender();
+      $("addCar").addEventListener("click",addCar);
+      $("emptyState").addEventListener("click",event=>{if(event.target.closest("[data-add-car]"))addCar();});
+      $("carGrid").addEventListener("click",event=>{
+        const button=event.target.closest("[data-delete-car]");
+        if(!button)return;
+        const car=fleet.cars.find(item=>item.id===button.dataset.deleteCar);
+        if(!car||!confirm(`Remove ${carName(car.data)} and all of its saved import data?`))return;
+        try { ImportTrackerStore.deleteCar(car.id); fleet=ImportTrackerStore.loadFleet(); renderCars(fleet); }
+        catch(error) { console.error("Could not remove car:",error); alert(error.message); }
       });
-      $("costRows").addEventListener("change",event=>{
-        const el=event.target, i=Number(el.dataset.cost), key=el.dataset.key;
-        if(Number.isInteger(i)&&key) data.costs[i][key]=["estimate","actual"].includes(key)?number(el.value):el.value;
-        rerender();
+      $("todoList").addEventListener("click",event=>{
+        if(!event.target.closest("[data-toggle-tasks]"))return;
+        showAllTasks=!showAllTasks;
+        renderTasks(fleet);
       });
-      $("costRows").addEventListener("click",event=>{
-        const i=event.target.dataset.remove;
-        if(i!==undefined){data.costs.splice(Number(i),1);renderCosts();rerender();}
-      });
-      $("addCost").addEventListener("click",()=>{data.costs.push({category:"New cost",estimate:0,actual:0,status:"estimated",date:"",notes:"",receipt:""});renderCosts();rerender();});
-      $("documentRows").addEventListener("input",event=>{
-        const el=event.target, i=Number(el.dataset.doc), key=el.dataset.key;
-        if(Number.isInteger(i)&&key) data.documents[i][key]=el.value;
-        if(el.dataset.docHave!==undefined){data.documents[Number(el.dataset.docHave)].status=el.checked?"Have":"Need";renderDocuments();}
-        rerender();
-      });
-      $("documentRows").addEventListener("change",event=>{
-        const el=event.target, i=Number(el.dataset.doc), key=el.dataset.key;
-        if(Number.isInteger(i)&&key) data.documents[i][key]=el.value;
-        if(el.dataset.docHave!==undefined) data.documents[Number(el.dataset.docHave)].status=el.checked?"Have":"Need";
-        renderDocuments(); rerender();
-      });
-      $("timelineRows").addEventListener("input",event=>{
-        const el=event.target, i=Number(el.dataset.stage), key=el.dataset.key;
-        if(Number.isInteger(i)&&key) data.stages[i][key]=el.value;
-        rerender();
-      });
-      $("timelineRows").addEventListener("change",event=>{
-        const el=event.target, i=Number(el.dataset.stage), key=el.dataset.key;
-        if(Number.isInteger(i)&&key) data.stages[i][key]=el.value;
-        renderStages(); rerender();
-      });
-      $("vehicleFields").addEventListener("input",event=>{
-        const el=event.target, i=Number(el.dataset.vehicle);
-        if(Number.isInteger(i)) data.vehicle[i].value=el.value;
-        save();
+      $("todoList").addEventListener("change",event=>{
+        const checkbox=event.target.closest("[data-task-kind]");
+        if(!checkbox||!checkbox.checked)return;
+        const car=fleet.cars.find(item=>item.id===checkbox.dataset.taskCar);
+        const index=Number(checkbox.dataset.taskIndex);
+        if(!car||!Number.isInteger(index))return;
+        try {
+          if(checkbox.dataset.taskKind==="document")car.data.documents[index].status="Have";
+          else car.data.stages[index].status="Done";
+          ImportTrackerStore.saveCar(car.id,car.data);
+          fleet=ImportTrackerStore.loadFleet();
+          renderCars(fleet);
+        } catch(error) {
+          console.error("Could not update to-do item:",error);
+          checkbox.checked=false;
+          alert(error.message);
+        }
       });
       $("themeToggle").addEventListener("click",()=>{
         const dark=document.documentElement.dataset.theme!=="dark";
@@ -396,31 +368,9 @@
         $("themeToggle").textContent=dark?"☀️ Light mode":"🌙 Dark mode";
         localStorage.setItem("mazda3-import-theme",dark?"dark":"light");
       });
-      const savedTheme=localStorage.getItem("mazda3-import-theme");
-      if(savedTheme==="dark"){document.documentElement.dataset.theme="dark";$("themeToggle").textContent="☀️ Light mode";}
-      $("exportJson").addEventListener("click",()=>{
-        const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-        download(blob,"mazda3-import-tracker.json");
-      });
-      $("importButton").addEventListener("click",()=>$("importFile").click());
-      $("importFile").addEventListener("change",async event=>{
-        const file=event.target.files?.[0]; if(!file)return;
-        try {
-          const parsed=JSON.parse(await file.text());
-          const imported=mergeData(parsed);
-          if(!confirm("Replace the tracker data in this browser with the imported file?")) return;
-          data=imported; renderInvoice();renderCosts();renderDocuments();renderStages();renderVehicle();rerender();
-        } catch(error) { alert(`Import failed: ${error.message}`); }
-        finally { event.target.value=""; }
-      });
-      $("exportCsv").addEventListener("click",()=>{
-        const quote=value=>`"${String(value??"").replace(/"/g,'""')}"`;
-        const rows=[["Category","Estimate EUR","Actual EUR","Status","Date","Notes","Receipt URL"],...data.costs.map(c=>[c.category,c.estimate,c.actual,c.status,c.date,c.notes,c.receipt])];
-        download(new Blob([rows.map(row=>row.map(quote).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"}),"mazda3-costs.csv");
-      });
-      function download(blob,name) {
-        const url=URL.createObjectURL(blob), a=document.createElement("a");
-        a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+      if(localStorage.getItem("mazda3-import-theme")==="dark") {
+        document.documentElement.dataset.theme="dark";
+        $("themeToggle").textContent="☀️ Light mode";
       }
     })();
   </script>
